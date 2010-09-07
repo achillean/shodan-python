@@ -1,4 +1,4 @@
-from simplejson import dumps, loads
+from json       import dumps, loads
 from urllib2    import urlopen
 from urllib     import urlencode
 
@@ -9,7 +9,7 @@ class WebAPIError(Exception):
         self.value = value
     
     def __str__(self):
-        return repr(self.value)
+        return self.value
 
 class WebAPI:
     """Wrapper around the SHODAN webservices API"""

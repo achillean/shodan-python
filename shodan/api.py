@@ -45,11 +45,11 @@ class WebAPI:
         data = loads(data)
         
         # Raise an exception if an error occurred
-        if data['error']:
+        if data.get('error', None):
             raise WebAPIError(data['error'])
         
         # Return the data
-        return loads(data)
+        return data
     
     def fingerprint(self, banner):
         """Determine the software based on the banner.

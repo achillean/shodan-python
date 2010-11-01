@@ -21,9 +21,45 @@ class WebAPI:
             self.parent = parent
         
         def download(self, id):
+            """Get all available information on an IP.
+    
+            Arguments:
+            id    -- ID of the ExploitDB entry
+    
+            Returns:
+            A dictionary with the following fields:
+            filename        -- Name of the file
+            content-type    -- Mimetype
+            data            -- Contents of the file
+    
+            """
             return self.parent._request('exploitdb/download', {'id': id})
         
         def search(self, query, **kwargs):
+            """Get all available information on an IP.
+    
+            Arguments:
+            query     -- Search terms
+            
+            Optional arguments:
+            author    -- Name of the exploit submitter
+            platform  -- Target platform (e.g. windows, linux, hardware etc.)
+            port      -- Service port number
+            type      -- Any, dos, local, papers, remote, shellcode and webapps
+    
+            Returns:
+            A dictionary with 2 main items: matches (list) and total (int).
+            Each item in 'matches' is a dictionary with the following elements:
+            
+            id
+            author
+            date
+            description
+            platform
+            port
+            type
+    
+            """
             return self.parent._request('exploitdb/search', dict(q=query, **kwargs))
     
     def __init__(self, key):

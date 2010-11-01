@@ -11,8 +11,20 @@ class WebAPIError(Exception):
     def __str__(self):
         return self.value
 
+
 class WebAPI:
     """Wrapper around the SHODAN webservices API"""
+    
+    class ExploitDb:
+        
+        def __init__(self, parent):
+            self.parent = parent
+        
+        def download(self, id):
+            return self.parent._request('exploitdb/download', {'id': id})
+        
+        def search(self, query, **kwargs):
+            return self.parent._request('exploitdb/search', dict(q=query, **kwargs))
     
     def __init__(self, key):
         """Initializes the API object.
@@ -23,6 +35,7 @@ class WebAPI:
         """
         self.api_key = key
         self.base_url = 'http://www.shodanhq.com/api/'
+        self.exploitdb = self.ExploitDb(self)
     
     def _request(self, function, params):
         """General-purpose function to create web requests to SHODAN.

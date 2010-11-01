@@ -31,9 +31,27 @@ Get all the information SHODAN has on the IP 217.140.75.46:
 	host = api.host('217.140.75.46')
 	print host
 
+Query ExploitDB (http://www.exploit-db.com) for exploits relating to PHP:
+	
+	exploits = api.exploitdb.search('PHP')
+	print 'Found %s exploits' % exploits['total']
+	for exploit in exploits['matches']:
+		print exploit
+
+To download the actual exploit code, just follow it up with:
+
+	code = api.exploitdb.download(exploit['id'])
+	print 'Name: %s' % code['filename']
+	print 'Type: %s' % code['content-type']
+	print 'Contents:\n%s' % code['data']
+
 To properly handle potential errors, you should wrap all requests in a try/except block:
 
 	try:
 		api.search("cisco-ios")
 	except Exception, e:
 		print 'Error: %s' % e
+
+## Articles
+
+* [Quick introduction to using the SHODAN API with Python](http://www.surtri.com/2010/08/16/shodan-api-and-unique)

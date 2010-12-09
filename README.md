@@ -1,6 +1,6 @@
 Visit the official Shodan API documentation at:
 
-	http://docs.shodanhq.com
+[http://docs.shodanhq.com](http://docs.shodanhq.com)
 
 ## Installation
 
@@ -58,7 +58,7 @@ To properly handle potential errors, you should wrap all requests in a try/excep
 
 Visit the official Shodan API documentation at:
 
-	http://docs.shodanhq.com
+[http://docs.shodanhq.com](http://docs.shodanhq.com)
 
 ## Articles
 

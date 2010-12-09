@@ -21,7 +21,7 @@ class WebAPI:
             self.parent = parent
         
         def download(self, id):
-            """Get all available information on an IP.
+            """Download the exploit code from the ExploitDB archive.
     
             Arguments:
             id    -- ID of the ExploitDB entry
@@ -36,7 +36,7 @@ class WebAPI:
             return self.parent._request('exploitdb/download', {'id': id})
         
         def search(self, query, **kwargs):
-            """Get all available information on an IP.
+            """Search the ExploitDB archive.
     
             Arguments:
             query     -- Search terms
@@ -62,6 +62,30 @@ class WebAPI:
             """
             return self.parent._request('exploitdb/search', dict(q=query, **kwargs))
     
+    class Msf:
+        
+        def __init__(self, parent):
+            self.parent = parent
+            
+        def download(self, id):
+            """Download a metasploit module given the fullname (id) of it.
+            
+            Arguments:
+            id        -- fullname of the module (ex. auxiliary/admin/backupexec/dump)
+            
+            Returns:
+            A dictionary with the following fields:
+            filename        -- Name of the file
+            content-type    -- Mimetype
+            data            -- File content
+            """
+            return self.parent._request('msf/download', {'id': id})
+        
+        def search(self, query, **kwargs):
+            """Search for a Metasploit module.
+            """
+            return self.parent._request('msf/search', dict(q=query, **kwargs))
+    
     def __init__(self, key):
         """Initializes the API object.
         
@@ -72,6 +96,7 @@ class WebAPI:
         self.api_key = key
         self.base_url = 'http://www.shodanhq.com/api/'
         self.exploitdb = self.ExploitDb(self)
+        self.msf = self.Msf(self)
     
     def _request(self, function, params):
         """General-purpose function to create web requests to SHODAN.

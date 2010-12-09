@@ -1,6 +1,6 @@
 Metadata-Version: 1.0
 Name: shodan
-Version: 0.1
+Version: 0.2
 Summary: Python library for working with SHODAN
 Home-page: http://github.com/achillean/shodan-python/
 Author: John Matherly

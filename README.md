@@ -1,3 +1,7 @@
+Visit the official Shodan API documentation at:
+
+	http://docs.shodanhq.com
+
 ## Installation
 
 To install the library from the cheeseshop, you can use easy_install:
@@ -52,6 +56,11 @@ To properly handle potential errors, you should wrap all requests in a try/excep
 	except Exception, e:
 		print 'Error: %s' % e
 
+Visit the official Shodan API documentation at:
+
+	http://docs.shodanhq.com
+
 ## Articles
 
-* [Quick introduction to using the SHODAN API with Python](http://www.surtri.com/2010/08/16/shodan-api-and-unique)
+* [Perl, Python and Ruby API libraries](http://www.surtri.com/2010/10/20/perl-python-ruby-api/)
+* [Using the ExploitDB API in Python](http://www.surtri.com/2010/11/01/exploitdb-api/)

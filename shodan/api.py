@@ -1,4 +1,7 @@
-from json       import dumps, loads
+try:
+    from json       import dumps, loads
+except:
+    from simplejson import dumps, loads
 from urllib2    import urlopen
 from urllib     import urlencode
 
@@ -14,6 +17,69 @@ class WebAPIError(Exception):
 
 class WebAPI:
     """Wrapper around the SHODAN webservices API"""
+    
+    class DatalossDb:
+        
+        def __init__(self, parent):
+            self.parent = parent
+        
+        def search(self, **kwargs):
+            """Search the Dataloss DB archive.
+    
+            Arguments:
+            name          -- Name of the affected company/ organisation
+            
+            arrest        -- whether the incident resulted in an arrest
+            breaches      -- the type of breach that occurred (Hack, MissingLaptop etc.)
+            country       -- country where the incident took place
+            ext           -- whether an external, third party was affected
+            ext_names     -- the name of the third party company that was affected
+            lawsuit       -- whether the incident resulted in a lawsuit
+            records       -- the number of records that were lost/ stolen
+            recovered     -- whether the affected items were recovered
+            sub_types     -- the sub-categorization of the affected company/ organization
+            source        -- whether the incident occurred from inside or outside the organization
+            stocks        -- stock symbol of the affected company
+            types         -- the basic type of organization (government, business, educational)
+            uid           -- unique ID for the incident
+    
+            Returns:
+            A dictionary with 2 main items: matches (list) and total (int).
+    
+            """
+            return self.parent._request('datalossdb/search', dict(**kwargs))
+    
+    class Exploits:
+        
+        def __init__(self, parent):
+            self.parent = parent
+            
+        def search(self, query, sources=[], cve=None, osvdb=None, msb=None, bid=None):
+            """Search the entire Shodan Exploits archive using the same query syntax
+            as the website.
+            
+            Arguments:
+            query    -- exploit search query; same syntax as website
+            
+            Optional arguments:
+            sources  -- metasploit, cve, osvdb, exploitdb, or packetstorm
+            cve      -- CVE identifier (ex. 2010-0432)
+            osvdb    -- OSVDB identifier (ex. 11666)
+            msb      -- Microsoft Security Bulletin ID (ex. MS05-030)
+            bid      -- Bugtraq identifier (ex. 13951)
+            
+            """
+            if sources:
+                query += ' source:' + ','.join(sources)
+            if cve:
+                query += ' cve:%s' % (str(cve).strip())
+            if osvdb:
+                query += ' osvdb:%s' % (str(osvdb).strip())
+            if msb:
+                query += ' msb:%s' % (str(msb).strip())
+            if bid:
+                query += ' bid:%s' % (str(bid).strip())
+            return self.parent._request('search_exploits', {'q': query})
     
     class ExploitDb:
         
@@ -95,6 +161,8 @@ class WebAPI:
         """
         self.api_key = key
         self.base_url = 'http://www.shodanhq.com/api/'
+        self.dataloss = self.DatalossDb(self)
+        self.exploits = self.Exploits(self)
         self.exploitdb = self.ExploitDb(self)
         self.msf = self.Msf(self)
     

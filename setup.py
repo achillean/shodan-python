@@ -7,7 +7,7 @@ from shodan import __version__ as version
 setup(
     name = 'shodan',
     version = version,
-    description = 'Python library for SHODAN',
+    description = 'Python library for SHODAN (http://www.shodanhq.com)',
     author = 'John Matherly',
     author_email = 'jmath@surtri.com',
     url = 'http://github.com/achillean/shodan-python/tree/master',

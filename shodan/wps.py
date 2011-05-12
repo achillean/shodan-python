@@ -11,7 +11,7 @@ except:
 from urllib2    import Request, urlopen
 from urllib     import urlencode
 
-class Skyhook():
+class Skyhook:
     
     """Not yet ready for production, use the GoogleLocation class instead."""
     
@@ -58,4 +58,5 @@ class GoogleLocation:
             }]
         }
         response = urlopen(self.url, dumps(data))
-        return response.read()
+        data = response.read()
+        return loads(data)

@@ -18,37 +18,6 @@ class WebAPIError(Exception):
 class WebAPI:
     """Wrapper around the SHODAN webservices API"""
     
-    class DatalossDb:
-        
-        def __init__(self, parent):
-            self.parent = parent
-        
-        def search(self, **kwargs):
-            """Search the Dataloss DB archive.
-    
-            Arguments:
-            name          -- Name of the affected company/ organisation
-            
-            arrest        -- whether the incident resulted in an arrest
-            breaches      -- the type of breach that occurred (Hack, MissingLaptop etc.)
-            country       -- country where the incident took place
-            ext           -- whether an external, third party was affected
-            ext_names     -- the name of the third party company that was affected
-            lawsuit       -- whether the incident resulted in a lawsuit
-            records       -- the number of records that were lost/ stolen
-            recovered     -- whether the affected items were recovered
-            sub_types     -- the sub-categorization of the affected company/ organization
-            source        -- whether the incident occurred from inside or outside the organization
-            stocks        -- stock symbol of the affected company
-            types         -- the basic type of organization (government, business, educational)
-            uid           -- unique ID for the incident
-    
-            Returns:
-            A dictionary with 2 main items: matches (list) and total (int).
-    
-            """
-            return self.parent._request('datalossdb/search', dict(**kwargs))
-    
     class Exploits:
         
         def __init__(self, parent):
@@ -161,7 +130,6 @@ class WebAPI:
         """
         self.api_key = key
         self.base_url = 'http://www.shodanhq.com/api/'
-        self.dataloss = self.DatalossDb(self)
         self.exploits = self.Exploits(self)
         self.exploitdb = self.ExploitDb(self)
         self.msf = self.Msf(self)
@@ -217,15 +185,18 @@ class WebAPI:
         """
         return self._request('host', {'ip': ip})
     
-    def search(self, query):
+    def search(self, query, page=1):
         """Search the SHODAN database.
         
         Arguments:
         query    -- search query; identical syntax to the website
+        
+        Optional arguments:
+        page     -- page number of the search results 
         
         Returns:
         A dictionary with 3 main items: matches, countries and total.
         Visit the website for more detailed information.
         
         """
-        return self._request('search', {'q': query})
+        return self._request('search', {'q': query, 'page': page})

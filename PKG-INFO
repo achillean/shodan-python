@@ -1,10 +1,10 @@
-Metadata-Version: 1.0
+Metadata-Version: 1.1
 Name: shodan
-Version: 0.5.0
+Version: 0.7.0
 Summary: Python library for working with SHODAN
 Home-page: http://github.com/achillean/shodan-python/
 Author: John Matherly
-Author-email: jmath@surtri.com
+Author-email: jmath@shodanhq.com
 License: UNKNOWN
 Description: UNKNOWN
 Platform: UNKNOWN

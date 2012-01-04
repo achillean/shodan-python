@@ -9,7 +9,7 @@ setup(
     version = version,
     description = 'Python library for SHODAN (http://www.shodanhq.com)',
     author = 'John Matherly',
-    author_email = 'jmath@surtri.com',
+    author_email = 'jmath@shodanhq.com',
     url = 'http://github.com/achillean/shodan-python/tree/master',
     packages = ['shodan'],
     classifiers = [

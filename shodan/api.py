@@ -185,7 +185,7 @@ class WebAPI:
         """
         return self._request('host', {'ip': ip})
     
-    def search(self, query, page=1):
+    def search(self, query, page=1, limit=None, offset=None):
         """Search the SHODAN database.
         
         Arguments:
@@ -193,10 +193,21 @@ class WebAPI:
         
         Optional arguments:
         page     -- page number of the search results 
+        limit    -- number of results to return
+        offset   -- search offset to begin getting results from
         
         Returns:
         A dictionary with 3 main items: matches, countries and total.
         Visit the website for more detailed information.
         
         """
-        return self._request('search', {'q': query, 'page': page})
+        args = {
+            'q': query,
+            'p': page,
+        }
+        if limit:
+            args['l'] = limit
+            if offset:
+                args['o'] = offset
+        
+        return self._request('search', args)

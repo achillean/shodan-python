@@ -161,6 +161,12 @@ class WebAPI:
         # Return the data
         return data
     
+    def info(self):
+        """Returns information about the current API key, such as a list of add-ons
+        and other features that are enabled for the current user's API plan.
+        """
+        return self._request('info', {})
+    
     def fingerprint(self, banner):
         """Determine the software based on the banner.
         

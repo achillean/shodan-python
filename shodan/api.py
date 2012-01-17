@@ -161,11 +161,11 @@ class WebAPI:
         # Return the data
         return data
     
-    def info(self):
-        """Returns information about the current API key, such as a list of add-ons
-        and other features that are enabled for the current user's API plan.
+    def locations(self, query):
+        """Return a break-down of all the countries and cities that the results for
+        the given search are located in.
         """
-        return self._request('info', {})
+        return self._request('locations', {'q': query})
     
     def fingerprint(self, banner):
         """Determine the software based on the banner.
@@ -190,6 +190,12 @@ class WebAPI:
 
         """
         return self._request('host', {'ip': ip})
+    
+    def info(self):
+        """Returns information about the current API key, such as a list of add-ons
+        and other features that are enabled for the current user's API plan.
+        """
+        return self._request('info', {})
     
     def search(self, query, page=1, limit=None, offset=None):
         """Search the SHODAN database.

@@ -156,7 +156,7 @@ class WebAPI:
         params['key'] = self.api_key
         
         # Send the request
-        data = urlopen(self.base_url + function + '?' + urlencode(params)).read()
+        data = urlopen(self.base_url + function + '?' + urlencode(params)).read().decode('utf-8')
         
         # Parse the text into JSON
         data = loads(data)

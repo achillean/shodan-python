@@ -1,4 +1,4 @@
-from api import WebAPI
+from .api import WebAPI
 
 __version__ = "0.8.0"
 

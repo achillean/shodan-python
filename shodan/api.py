@@ -2,8 +2,15 @@ try:
     from json       import dumps, loads
 except:
     from simplejson import dumps, loads
-from urllib2    import urlopen
-from urllib     import urlencode
+
+try:
+    # Python 2
+    from urllib2    import urlopen
+    from urllib     import urlencode
+except:
+    # Python 3
+    from urllib.request     import urlopen
+    from urllib.parse       import urlencode
 
 __all__ = ['WebAPI']
 

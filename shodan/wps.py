@@ -8,8 +8,13 @@ try:
     from json       import dumps, loads
 except:
     from simplejson import dumps, loads
-from urllib2    import Request, urlopen
-from urllib     import urlencode
+
+try:
+    from urllib2    import Request, urlopen
+    from urllib     import urlencode
+except:
+    from urllib.request     import Request, urlopen
+    from urllib.parse       import urlencode
 
 class Skyhook:
     
@@ -23,7 +28,6 @@ class Skyhook:
     def locate(self, mac):
         # Remove the ':'
         mac = mac.replace(':', '')
-        print mac
         data = """<?xml version='1.0'?>  
         <LocationRQ xmlns='http://skyhookwireless.com/wps/2005' version='2.6' street-address-lookup='full'>  
           <authentication version='2.0'>  

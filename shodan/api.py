@@ -2,8 +2,15 @@ try:
     from json       import dumps, loads
 except:
     from simplejson import dumps, loads
-from urllib2    import urlopen
-from urllib     import urlencode
+
+try:
+    # Python 2
+    from urllib2    import urlopen
+    from urllib     import urlencode
+except:
+    # Python 3
+    from urllib.request     import urlopen
+    from urllib.parse       import urlencode
 
 __all__ = ['WebAPI']
 
@@ -149,7 +156,7 @@ class WebAPI:
         params['key'] = self.api_key
         
         # Send the request
-        data = urlopen(self.base_url + function + '?' + urlencode(params)).read()
+        data = urlopen(self.base_url + function + '?' + urlencode(params)).read().decode('utf-8')
         
         # Parse the text into JSON
         data = loads(data)

@@ -161,6 +161,11 @@ class WebAPI:
         # Return the data
         return data
     
+    def count(self, query):
+        """Returns the total number of search results for the query.
+        """
+        return self._request('count', {'q': query})
+    
     def locations(self, query):
         """Return a break-down of all the countries and cities that the results for
         the given search are located in.

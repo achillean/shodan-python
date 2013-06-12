@@ -49,7 +49,7 @@ class Skyhook:
 class GoogleLocation:
     
     def __init__(self):
-        self.url = 'http://www.google.com/loc/json'
+        self.url = 'http://www.google.com/loc/json' # this produces a 404, it won`t work as it doesnt exist!
     
     def locate(self, mac):
         data = {

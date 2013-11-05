@@ -12,6 +12,7 @@ setup(
     author_email = 'jmath@shodanhq.com',
     url = 'http://github.com/achillean/shodan-python/tree/master',
     packages = ['shodan'],
+    install_requires=["simplejson"],
     classifiers = [
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',

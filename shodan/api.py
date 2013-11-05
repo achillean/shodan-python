@@ -1,7 +1,5 @@
-try:
-    from json       import dumps, loads
-except:
-    from simplejson import dumps, loads
+# The simplejson library has better JSON-parsing than the standard library and is more often updated
+from simplejson import dumps, loads
 
 try:
     # Python 2
@@ -38,7 +36,7 @@ class WebAPI:
             query    -- exploit search query; same syntax as website
             
             Optional arguments:
-            sources  -- metasploit, cve, osvdb, exploitdb, or packetstorm
+            sources  -- metasploit, cve, osvdb, exploitdb
             cve      -- CVE identifier (ex. 2010-0432)
             osvdb    -- OSVDB identifier (ex. 11666)
             msb      -- Microsoft Security Bulletin ID (ex. MS05-030)
@@ -55,7 +53,7 @@ class WebAPI:
                 query += ' msb:%s' % (str(msb).strip())
             if bid:
                 query += ' bid:%s' % (str(bid).strip())
-            return self.parent._request('search_exploits', {'q': query})
+            return self.parent._request('api', {'q': query}, service='exploits')
     
     class ExploitDb:
         
@@ -63,46 +61,25 @@ class WebAPI:
             self.parent = parent
         
         def download(self, id):
-            """Download the exploit code from the ExploitDB archive.
+            """DEPRECATED
+            Download the exploit code from the ExploitDB archive.
     
             Arguments:
             id    -- ID of the ExploitDB entry
-    
-            Returns:
-            A dictionary with the following fields:
-            filename        -- Name of the file
-            content-type    -- Mimetype
-            data            -- Contents of the file
-    
             """
-            return self.parent._request('exploitdb/download', {'id': id})
+            query = '_id:%s' % id
+            return self.parent.search(query, sources=['exploitdb'])
         
         def search(self, query, **kwargs):
             """Search the ExploitDB archive.
     
             Arguments:
             query     -- Search terms
-            
-            Optional arguments:
-            author    -- Name of the exploit submitter
-            platform  -- Target platform (e.g. windows, linux, hardware etc.)
-            port      -- Service port number
-            type      -- Any, dos, local, papers, remote, shellcode and webapps
     
             Returns:
             A dictionary with 2 main items: matches (list) and total (int).
-            Each item in 'matches' is a dictionary with the following elements:
-            
-            id
-            author
-            date
-            description
-            platform
-            port
-            type
-    
             """
-            return self.parent._request('exploitdb/search', dict(q=query, **kwargs))
+            return self.parent.search(query, sources=['exploitdb'])
     
     class Msf:
         
@@ -121,12 +98,13 @@ class WebAPI:
             content-type    -- Mimetype
             data            -- File content
             """
-            return self.parent._request('msf/download', {'id': id})
+            query = '_id:%s' % id
+            return self.parent.search(query, sources=['metasploit'])
         
         def search(self, query, **kwargs):
             """Search for a Metasploit module.
             """
-            return self.parent._request('msf/search', dict(q=query, **kwargs))
+            return self.parent.search(query, sources=['metasploit'])
     
     def __init__(self, key):
         """Initializes the API object.
@@ -137,11 +115,12 @@ class WebAPI:
         """
         self.api_key = key
         self.base_url = 'http://www.shodanhq.com/api/'
+        self.base_exploits_url = 'https://exploits.shodan.io/'
         self.exploits = self.Exploits(self)
-        self.exploitdb = self.ExploitDb(self)
-        self.msf = self.Msf(self)
+        self.exploitdb = self.ExploitDb(self.exploits)
+        self.msf = self.Msf(self.exploits)
     
-    def _request(self, function, params):
+    def _request(self, function, params, service='shodan'):
         """General-purpose function to create web requests to SHODAN.
         
         Arguments:
@@ -155,8 +134,17 @@ class WebAPI:
         # Add the API key parameter automatically
         params['key'] = self.api_key
         
+        # Determine the base_url based on which service we're interacting with
+        base_url = {
+            'shodan': self.base_url,
+            'exploits': self.base_exploits_url,
+        }.get(service, 'shodan')
+
         # Send the request
-        data = urlopen(self.base_url + function + '?' + urlencode(params)).read().decode('utf-8')
+        try:
+            data = urlopen(base_url + function + '?' + urlencode(params)).read().decode('utf-8')
+        except:
+            raise WebAPIError('Unable to connect to Shodan')
         
         # Parse the text into JSON
         data = loads(data)

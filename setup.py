@@ -2,14 +2,12 @@
 
 from distutils.core import setup
 
-from shodan import __version__ as version
-
 setup(
     name = 'shodan',
-    version = version,
-    description = 'Python library for SHODAN (http://www.shodanhq.com)',
+    version = '0.9.1',
+    description = 'Python library for Shodan (http://www.shodanhq.com)',
     author = 'John Matherly',
-    author_email = 'jmath@shodanhq.com',
+    author_email = 'jmath@shodan.io',
     url = 'http://github.com/achillean/shodan-python/tree/master',
     packages = ['shodan'],
     install_requires=["simplejson"],

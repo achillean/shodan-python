@@ -22,13 +22,11 @@ To install the Shodan library, simply:
 
     $ pip install shodan
 
-Or, if you absolutely must:
+Or if you don't have pip installed (which you should seriously install):
 
 .. code-block:: bash
 
-    $ easy_install requests
-
-But, you really shouldn't do that.
+    $ easy_install shodan
 
 
 Documentation

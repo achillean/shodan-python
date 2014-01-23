@@ -4,13 +4,13 @@ from distutils.core import setup
 
 setup(
     name = 'shodan',
-    version = '0.9.1',
+    version = '1.0.0',
     description = 'Python library for Shodan (http://www.shodanhq.com)',
     author = 'John Matherly',
     author_email = 'jmath@shodan.io',
     url = 'http://github.com/achillean/shodan-python/tree/master',
     packages = ['shodan'],
-    install_requires=["simplejson"],
+    install_requires=["simplejson", "requests"],
     classifiers = [
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',

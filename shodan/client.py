@@ -12,7 +12,6 @@ This module implements the Shodan API.
 import requests
 import simplejson
 
-__all__ = ['WebAPI']
 
 class APIError(Exception):
     def __init__(self, value):

@@ -11,6 +11,7 @@ any results as well as asking the API to return faceted information on the organ
 and country.
 
 .. code-block:: python
+
 	#!/usr/bin/env python
 	#
 	# query-summary.py

@@ -24,6 +24,7 @@ Examples
     :maxdepth: 2
 
     examples/basic-search
+    examples/query-summary
 
 API Reference
 ~~~~~~~~~~~~~

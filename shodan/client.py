@@ -14,6 +14,7 @@ import simplejson
 
 
 class APIError(Exception):
+    """This exception gets raised whenever a non-200 status code was returned by the Shodan API."""
     def __init__(self, value):
         self.value = value
     
@@ -22,7 +23,13 @@ class APIError(Exception):
 
 
 class Shodan:
-    """Wrapper around the SHODAN webservices API"""
+    """Wrapper around the Shodan REST and Streaming APIs
+
+    :param key: The Shodan API key that can be obtained from your account page (https://account.shodan.io)
+    :type key: str
+    :ivar exploits: An instance of `shodan.Shodan.Exploits` that provides access to the Exploits REST API.
+    :ivar stream: An instance of `shodan.Shodan.Stream` that provides access to the Streaming API.
+    """
     
     class Exploits:
 
@@ -205,6 +212,8 @@ class Shodan:
         :type query: str
         :param facets: (optional) A list of properties to get summary information on
         :type facets: str
+        
+        :returns: A dictionary with 1 main property: total. If facets have been provided then another property called "facets" will be available at the top-level of the dictionary. Visit the website for more detailed information.
         """
         query_args = {
             'query': query,

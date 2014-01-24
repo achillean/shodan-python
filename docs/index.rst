@@ -3,23 +3,31 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to shodan-python's documentation!
-=========================================
+shodan - The official Python library for the Shodan search engine
+=================================================================
 
-Contents:
+This is the official Python wrapper around both the Shodan REST API as well as the experimental
+Streaming API. And as a bonus it also lets you search for exploits using the Shodan Exploits REST API.
+If you're not sure where to start simply go through the "Getting Started" section of the documentation and work your
+way down through the examples.
 
+Introduction
+~~~~~~~~~~~~
 .. toctree::
-   :maxdepth: 2
+    :maxdepth: 2
 
-.. module:: shodan
+    tutorial
 
-.. autoclass:: Shodan
-    :members:
+Examples
+~~~~~~~~
+.. toctree::
+    :maxdepth: 2
 
-Indices and tables
-==================
+    examples/basic-search
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+API Reference
+~~~~~~~~~~~~~
+.. toctree::
+    :maxdepth: 2
 
+    api

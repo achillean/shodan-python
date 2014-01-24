@@ -25,6 +25,7 @@ Examples
 
     examples/basic-search
     examples/query-summary
+    examples/cert-stream
 
 API Reference
 ~~~~~~~~~~~~~

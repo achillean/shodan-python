@@ -53,7 +53,7 @@ Now that we have our API object all good to go, we're ready to perform a search:
 		# Show the results
 		print 'Results found: %s' % results['total']
 		for result in results['matches']:
-			print 'IP: %s' % result['ip']
+			print 'IP: %s' % result['ip_str']
 			print result['data']
 			print ''
 	except shodan.APIError, e:
@@ -93,7 +93,7 @@ will raise an exception. But for simplicity's sake, I will leave that part out f
 Looking up a host
 -----------------
 
-To see what Shodan has available on a specific IP we can use the :py:func:`WebAPI.host` function:
+To see what Shodan has available on a specific IP we can use the :py:func:`Shodan.host` function:
 
 .. code-block:: python
 	
@@ -103,9 +103,9 @@ To see what Shodan has available on a specific IP we can use the :py:func:`WebAP
 	# Print general info
 	print """
 		IP: %s
-		Country: %s
-		City: %s
-	""" % (host['ip'], host.get('country', None), host.get('city', None))
+		Organization: %s
+		Operating System: %s
+	""" % (host['ip_str'], host.get('org', 'n/a'), host.get('os', 'n/a'))
 	
 	# Print all banners
 	for item in host['data']:
@@ -113,4 +113,4 @@ To see what Shodan has available on a specific IP we can use the :py:func:`WebAP
 			Port: %s
 			Banner: %s
 			
-		""" % (item['port'], item['banner'])
+		""" % (item['port'], item['data'])

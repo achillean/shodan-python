@@ -23,7 +23,7 @@ Basic Shodan Search
 	
 	try:
 		# Setup the api
-		api = shodan.WebAPI(API_KEY)
+		api = shodan.Shodan(API_KEY)
 	
 		# Perform the search
 		query = ' '.join(sys.argv[1:])

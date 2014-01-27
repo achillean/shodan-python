@@ -276,3 +276,34 @@ class Shodan:
             args['facets'] = facet_str
         
         return self._request('/shodan/host/search', args)
+    
+    def search_cursor(self, query, minify=True):
+        """Search the SHODAN database.
+
+        This method returns an iterator that can directly be in a loop. Use it when you want to loop over
+        all of the results of a search query. But this method doesn't return a "matches" array or the "total"
+        information. And it also can't be used with facets, it's only use is to iterate over results more
+        easily.
+
+        :param query: Search query; identical syntax to the website
+        :type query: str
+        :param minify: (optional) Whether to minify the banner and only return the important data
+        :type minify: bool
+        
+        :returns: A search cursor that can be used as an iterator/ generator.
+        """
+        args = {
+            'query': query,
+            'minify': minify,
+        }
+
+        page = 1
+
+        # Get the first page of results
+        results = self.search(query, minify=minify, page=page)
+
+        while results['matches']:
+            for banner in results['matches']:
+                yield banner
+            page += 1
+            results = self.search(query, minify=minify, page=page)

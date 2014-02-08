@@ -307,3 +307,10 @@ class Shodan:
                 yield banner
             page += 1
             results = self.search(query, minify=minify, page=page)
+
+    def services(self):
+        """Get a list of services that Shodan crawls
+
+        :returns: A dictionary containing the ports/ services that Shodan crawls for. The key is the port number and the value is the name of the service.
+        """
+        return self._request('/shodan/services', {})

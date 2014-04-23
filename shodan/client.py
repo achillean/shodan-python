@@ -307,6 +307,19 @@ class Shodan:
                 yield banner
             page += 1
             results = self.search(query, minify=minify, page=page)
+    
+    def search_tokens(self, query):
+        """Returns information about the search query itself (filters used etc.)
+
+        :param query: Search query; identical syntax to the website
+        :type query: str
+        
+        :returns: A dictionary with 4 main properties: filters, errors, attributes and string.
+        """
+        query_args = {
+            'query': query,
+        }
+        return self._request('/shodan/host/search/tokens', query_args)
 
     def services(self):
         """Get a list of services that Shodan crawls

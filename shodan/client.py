@@ -327,3 +327,23 @@ class Shodan:
         :returns: A dictionary containing the ports/ services that Shodan crawls for. The key is the port number and the value is the name of the service.
         """
         return self._request('/shodan/services', {})
+
+    def queries(self, page=1, sort='timestamp', order='desc'):
+        """List the search queries that have been shared by other users.
+
+        :param page: Page number to iterate over results; each page contains 10 items
+        :type page: int
+        :param sort: Sort the list based on a property. Possible values are: votes, timestamp
+        :type sort: str
+        :param order: Whether to sort the list in ascending or descending order. Possible values are: asc, desc
+        :type order: str
+
+        :returns: A list of saved search queries (dictionaries).
+        """
+        args = {
+            'page': page,
+            'sort': sort,
+            'order': order,
+        }
+        return self._request('/shodan/query', args)
+

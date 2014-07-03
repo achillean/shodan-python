@@ -347,3 +347,32 @@ class Shodan:
         }
         return self._request('/shodan/query', args)
 
+    def queries_search(self, query, page=1):
+        """Search the directory of saved search queries in Shodan.
+
+        :param query: The search string to look for in the search query
+        :type query: str
+        :param page: Page number to iterate over results; each page contains 10 items
+        :type page: int
+
+        :returns: A list of saved search queries (dictionaries).
+        """
+        args = {
+            'page': page,
+            'query': query,
+        }
+        return self._request('/shodan/query/search', args)
+
+    def queries_tags(self, size=10):
+        """Search the directory of saved search queries in Shodan.
+
+        :param query: The number of tags to return
+        :type page: int
+
+        :returns: A list of tags.
+        """
+        args = {
+            'size': size,
+        }
+        return self._request('/shodan/query/tags', args)
+

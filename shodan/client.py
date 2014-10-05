@@ -31,6 +31,18 @@ class Shodan:
     :ivar stream: An instance of `shodan.Shodan.Stream` that provides access to the Streaming API.
     """
     
+    class Tools:
+
+        def __init__(self, parent):
+            self.parent = parent
+
+        def myip(self):
+            """Get your current IP address as seen from the Internet.
+
+            :returns: str -- your IP address
+            """
+            return self.parent._request('/tools/myip', {})
+    
     class Exploits:
 
         def __init__(self, parent):
@@ -143,6 +155,7 @@ class Shodan:
         self.base_url = 'https://api.shodan.io'
         self.base_exploits_url = 'https://exploits.shodan.io'
         self.exploits = self.Exploits(self)
+        self.tools = self.Tools(self)
         self.stream = self.Stream(self)
     
     def _request(self, function, params, service='shodan'):
@@ -186,7 +199,7 @@ class Shodan:
             raise APIError('Unable to parse JSON response')
         
         # Raise an exception if an error occurred
-        if data.get('error', None):
+        if type(data) == dict and data.get('error', None):
             raise APIError(data['error'])
         
         # Return the data

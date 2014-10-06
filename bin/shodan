@@ -38,8 +38,16 @@ COLORIZE_FIELDS = {
 # Utility methods
 def get_api_key():
     shodan_dir = os.path.expanduser(SHODAN_CONFIG_DIR)
-    with open(shodan_dir + '/api_key', 'r') as fin:
+    keyfile = shodan_dir + '/api_key'
+
+    # If the file doesn't yet exist let the user know that they need to
+    # initialize the shodan cli
+    if not os.path.exists(keyfile):
+        raise click.ClickException('Please run "shodan init <api key>" before using this command')
+
+    with open(keyfile, 'r') as fin:
         return fin.read().strip()
+
     raise click.ClickException('Please run "shodan init <api key>" before using this command')
 
 def escape_data(args):
@@ -90,12 +98,78 @@ def count(query):
 
     click.echo(results['total'])
 
+
+@main.command()
+@click.option('--limit', help='The number of results you want to download. -1 to download all the data possible.', default=1000, type=int)
+@click.argument('filename', metavar='<filename>')
+@click.argument('query', metavar='<search query>', nargs=-1)
+def download(limit, filename, query):
+    """Download search results and save them in a compressed JSON file."""
+    key = get_api_key()
+
+    # Create the query string out of the provided tuple
+    query = ' '.join(query).strip()
+
+    # Make sure the user didn't supply an empty string
+    if query == '':
+        raise click.ClickException('Empty search query')
+
+    filename = filename.strip()
+    if filename == '':
+        raise click.ClickException('Empty filename')
+
+    # Add the appropriate extension if it's not there atm
+    if not filename.endswith('.json.gz'):
+        filename += '.json.gz'
+
+    # Perform the search
+    api = shodan.Shodan(key)
+
+    try:
+        total = api.count(query)['total']
+        info = api.info()
+    except:
+        raise click.ClickException('The Shodan API is unresponsive at the moment, please try again later.')
+
+    # Print some summary information about the download request
+    click.echo('Search query:\t\t\t%s' % query)
+    click.echo('Total number of results:\t%s' % total)
+    click.echo('Query credits left:\t\t%s' % info['unlocked_left'])
+    click.echo('Output file:\t\t\t%s' % filename)
+
+    if limit > total:
+        limit = total
+
+    # A limit of -1 means that we should download all the data
+    if limit == -1:
+        limit = total
+
+    with gzip.open(filename, 'w') as fout:
+        count = 0
+        try:
+            cursor = api.search_cursor(query)
+            with click.progressbar(cursor, length=limit) as bar:
+                for banner in bar:
+                    fout.write(simplejson.dumps(banner) + '\n')
+                    count += 1
+
+                    if count >= limit:
+                        break
+        except:
+            pass
+
+        # Let the user know we're done
+        if count < limit:
+            click.echo(click.style('Notice: fewer results were saved than requested', 'yellow'))
+        click.echo(click.style('Saved %s results into file %s' % (count, filename), 'green'))
+
 @main.command()
 @click.option('--color/--no-color', default=True)
 @click.option('--fields', help='List of properties to output.', default='ip_str,port,hostnames,data')
 @click.option('--separator', help='The separator between the properties of the search results.', default='\t')
 @click.argument('filename', metavar='<filename>', type=click.Path(exists=True))
 def parse(color, fields, separator, filename):
+    """Extract information out of compressed JSON files."""
     # Make sure it's some sort of json file
     if not filename.endswith('.json.gz') and not filename.endswith('.json'):
         raise click.ClickException('Invalid file, please make sure it is a valid Shodan JSON file')

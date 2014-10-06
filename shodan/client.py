@@ -11,6 +11,7 @@ This module implements the Shodan API.
 
 import requests
 import simplejson
+import time
 
 
 class APIError(Exception):
@@ -290,7 +291,7 @@ class Shodan:
         
         return self._request('/shodan/host/search', args)
     
-    def search_cursor(self, query, minify=True):
+    def search_cursor(self, query, minify=True, retries=5):
         """Search the SHODAN database.
 
         This method returns an iterator that can directly be in a loop. Use it when you want to loop over
@@ -302,6 +303,8 @@ class Shodan:
         :type query: str
         :param minify: (optional) Whether to minify the banner and only return the important data
         :type minify: bool
+        :param retries: (optional) How often to retry the search in case it times out
+        :type minify: int
         
         :returns: A search cursor that can be used as an iterator/ generator.
         """
@@ -311,15 +314,21 @@ class Shodan:
         }
 
         page = 1
+        tries = 0
+        while page == 1 or results['matches']:
+            try:
+                results = self.search(query, minify=minify, page=page)
+                for banner in results['matches']:
+                    yield banner
+                page += 1
+                tries = 0
+            except:
+                # We've retried several times but it keeps failing, so lets error out
+                if tries >= retries:
+                    break
 
-        # Get the first page of results
-        results = self.search(query, minify=minify, page=page)
-
-        while results['matches']:
-            for banner in results['matches']:
-                yield banner
-            page += 1
-            results = self.search(query, minify=minify, page=page)
+                tries += 1
+                time.sleep(1.0) # wait 1 second if the search errored out for some reason
     
     def search_tokens(self, query):
         """Returns information about the search query itself (filters used etc.)

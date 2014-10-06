@@ -319,7 +319,10 @@ class Shodan:
             try:
                 results = self.search(query, minify=minify, page=page)
                 for banner in results['matches']:
-                    yield banner
+                    try:
+                        yield banner
+                    except GeneratorExit:
+                        return # exit out of the function
                 page += 1
                 tries = 0
             except:

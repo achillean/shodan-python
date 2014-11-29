@@ -159,7 +159,7 @@ class Shodan:
         self.tools = self.Tools(self)
         self.stream = self.Stream(self)
     
-    def _request(self, function, params, service='shodan'):
+    def _request(self, function, params, service='shodan', method='get'):
         """General-purpose function to create web requests to SHODAN.
         
         Arguments:
@@ -181,7 +181,10 @@ class Shodan:
 
         # Send the request
         try:
-            data = requests.get(base_url + function, params=params)
+            if method.lower() == 'post':
+                data = requests.post(base_url + function, params)
+            else:
+                data = requests.get(base_url + function, params=params)
         except:
             raise APIError('Unable to connect to Shodan')
 
@@ -255,6 +258,23 @@ class Shodan:
         and other features that are enabled for the current user's API plan.
         """
         return self._request('/api-info', {})
+
+    def scan(self, ips):
+        """Scan a network using Shodan
+
+        :param ips: A list of IPs or netblocks in CIDR notation
+        :type ips: str
+
+        :returns: A dictionary with a unique ID to check on the scan progress, the number of IPs that will be crawled and how many scan credits are left.
+        """
+        if isinstance(ips, basestring):
+            ips = [ips]
+
+        params = {
+            'ips': ','.join(ips),
+        }
+
+        return self._request('/shodan/scan', params, method='post')
     
     def search(self, query, page=1, limit=None, offset=None, facets=None, minify=True):
         """Search the SHODAN database.

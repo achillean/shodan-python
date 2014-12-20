@@ -31,8 +31,15 @@ class Threatnet:
                 raise APIError('Invalid API key or you do not have access to the Streaming API')
             return req
 
+        def backscatter(self):
+            stream = self._create_stream('/threatnet/backscatter')
+            for line in stream.iter_lines():
+                if line:
+                    banner = simplejson.loads(line)
+                    yield banner
+
         def activity(self):
-            stream = self._create_stream('/threatnet/activity')
+            stream = self._create_stream('/threatnet/ssh')
             for line in stream.iter_lines():
                 if line:
                     banner = simplejson.loads(line)

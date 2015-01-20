@@ -231,7 +231,7 @@ def myip():
 @main.command()
 @click.argument('netblocks', metavar='<ip address>', nargs=-1)
 def scan(netblocks):
-    """Returns the number of results for a search"""
+    """Scan an IP/ netblock using Shodan."""
     key = get_api_key()
     api = shodan.Shodan(key)
 

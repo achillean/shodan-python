@@ -18,12 +18,13 @@ The following commands are currently supported:
 """
 
 import click
+import datetime
 import gzip
 import os
 import os.path
 import shodan
 import simplejson
-
+import time
 
 # Constants
 SHODAN_CONFIG_DIR = '~/.shodan/'
@@ -52,13 +53,21 @@ def get_api_key():
 
     raise click.ClickException('Please run "shodan init <api key>" before using this command')
 
+
 def escape_data(args):
     return args.encode('ascii', 'replace').replace('\n', '\\n').replace('\r', '\\r').replace('\t', '\\t')
+
+def timestr():
+        return datetime.datetime.utcnow().strftime('%Y-%m-%d')
+
+def open_file(directory, timestr):
+        return gzip.open('%s/%s.json.gz' % (directory, timestr), 'a', 1)
 
 
 @click.group()
 def main():
     pass
+
 
 @main.command()
 @click.argument('key', metavar='<api key>')
@@ -165,6 +174,7 @@ def download(limit, filename, query):
             click.echo(click.style('Notice: fewer results were saved than requested', 'yellow'))
         click.echo(click.style('Saved %s results into file %s' % (count, filename), 'green'))
 
+
 @main.command()
 @click.option('--color/--no-color', default=True)
 @click.option('--fields', help='List of properties to output.', default='ip_str,port,hostnames,data')
@@ -216,6 +226,7 @@ def parse(color, fields, separator, filename):
 
         click.echo(row)
 
+
 @main.command()
 def myip():
     """Print your external IP address"""
@@ -242,6 +253,7 @@ def scan(netblocks):
         click.echo(click.style('Success! ', fg='green') + '%s host(s) submitted (%s scan credits remaining)' % (results['count'], results['credits_left']))
     except shodan.APIError, e:
         raise click.ClickException(e.value)
+
 
 @main.command()
 @click.option('--color/--no-color', default=True)
@@ -307,6 +319,101 @@ def search(color, fields, limit, separator, query):
         output += row + '\n'
         # click.echo('')
     click.echo_via_pager(output)
+
+
+@main.command()
+@click.option('--color/--no-color', default=True)
+@click.option('--fields', help='List of properties to output.', default='ip_str,port,hostnames,data')
+@click.option('--separator', help='The separator between the properties of the search results.', default='\t')
+@click.option('--limit', help='The number of results you want to download. -1 to download all the data possible.', default=-1, type=int)
+@click.option('--datadir', help='Save the stream data into the specified directory as .json.gz files.', default=None, type=str)
+@click.option('--ports', help='A comma-separated list of ports to grab data on.', default=None, type=str)
+@click.option('--quiet', help='Disable the printing of information to the screen.', is_flag=True)
+def stream(color, fields, separator, limit, datadir, ports, quiet):
+    """Stream data in real-time."""
+    # Setup the Shodan API
+    key = get_api_key()
+    api = shodan.Shodan(key)
+
+    # Strip out any whitespace in the fields and turn them into an array
+    fields = [item.strip() for item in fields.split(',')]
+
+    if len(fields) == 0:
+        raise click.ClickException('Please define at least one property to show')
+
+    # Turn the list of ports into integers
+    if ports:
+        try:
+            ports = [int(item.strip()) for item in ports.split(',')]
+        except:
+            raise click.ClickException('Invalid list of ports')
+
+    # Decide which stream to subscribe to based on whether or not ports were selected
+    if ports:
+        stream = api.stream.ports(ports)
+    else:
+        stream = api.stream.banners()
+
+    counter = 0
+    quit = False
+    last_time = timestr()
+    fout = None
+
+    if datadir:
+        fout = open_file(datadir, last_time)
+
+    while not quit:
+        try:
+            for banner in stream:
+                # Limit the number of results to output
+                if limit > 0:
+                    counter += 1
+
+                    if counter > limit:
+                        quit = True
+                        break
+
+                # Write the data to the file
+                if datadir:
+                    cur_time = timestr()
+                    if cur_time != last_time:
+                            last_time = cur_time
+                            fout.close()
+                            fout = open_file(datadir, last_time)
+                    fout.write(simplejson.dumps(banner) + '\n')
+
+                # Print the banner information to stdout
+                if not quiet:
+                    row = ''
+
+                    # Loop over all the fields and print the banner as a row
+                    for field in fields:
+                        tmp = ''
+                        if field in banner and banner[field]:
+                            field_type = type(banner[field])
+
+                            # If the field is an array then merge it together
+                            if field_type == list:
+                                tmp = ';'.join(banner[field])
+                            elif field_type in [int, float]:
+                                tmp = str(banner[field])
+                            else:
+                                tmp = escape_data(banner[field])
+
+                            # Colorize certain fields if the user wants it
+                            if color:
+                                tmp = click.style(tmp, fg=COLORIZE_FIELDS.get(field, 'white'))
+
+                            # Add the field information to the row
+                            row += tmp + separator
+
+                    click.echo(row)
+        except KeyboardInterrupt:
+            quit = True
+        except:
+            # For other errors lets just wait a few seconds and try to reconnect again
+            time.sleep(2)
+
 
 if __name__ == '__main__':
     main()

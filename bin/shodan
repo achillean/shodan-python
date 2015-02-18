@@ -222,7 +222,8 @@ def parse(color, fields, separator, filename):
                     tmp = click.style(tmp, fg=COLORIZE_FIELDS.get(field, 'white'))
 
                 # Add the field information to the row
-                row += tmp + separator
+                row += tmp
+            row += separator
 
         click.echo(row)
 
@@ -313,7 +314,8 @@ def search(color, fields, limit, separator, query):
                     tmp = click.style(tmp, fg=COLORIZE_FIELDS.get(field, 'white'))
 
                 # Add the field information to the row
-                row += tmp + separator
+                row += tmp
+            row += separator
 
             # click.echo(out + separator, nl=False)
         output += row + '\n'
@@ -405,7 +407,8 @@ def stream(color, fields, separator, limit, datadir, ports, quiet):
                                 tmp = click.style(tmp, fg=COLORIZE_FIELDS.get(field, 'white'))
 
                             # Add the field information to the row
-                            row += tmp + separator
+                            row += tmp
+                        row += separator
 
                     click.echo(row)
         except KeyboardInterrupt:

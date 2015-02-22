@@ -324,6 +324,42 @@ def search(color, fields, limit, separator, query):
 
 
 @main.command()
+@click.option('--limit', help='The number of results to return.', default=10, type=int)
+@click.option('--facets', help='List of facets to get statistics for.', default='country,org')
+@click.argument('query', metavar='<search query>', nargs=-1)
+def stats(limit, facets, query):
+    # Setup Shodan
+    key = get_api_key()
+    api = shodan.Shodan(key)
+
+    # Create the query string out of the provided tuple
+    query = ' '.join(query).strip()
+
+    # Make sure the user didn't supply an empty string
+    if query == '':
+        raise click.ClickException('Empty search query')
+
+    facets = facets.split(',')
+    facets = [(facet, limit) for facet in facets]
+
+    # Perform the search
+    api = shodan.Shodan(key)
+    try:
+        results = api.count(query, facets=facets)
+    except shodan.APIError, e:
+        raise click.ClickException(e.value)
+
+    # Print the stats tables
+    for facet in results['facets']:
+        print '# Top %s %s' % (limit, facet)
+
+        for item in results['facets'][facet]:
+            print '  {:28s}'.format(item['value']), '{:12,d}'.format(item['count'])
+
+        print ''
+
+
+@main.command()
 @click.option('--color/--no-color', default=True)
 @click.option('--fields', help='List of properties to output.', default='ip_str,port,hostnames,data')
 @click.option('--separator', help='The separator between the properties of the search results.', default='\t')

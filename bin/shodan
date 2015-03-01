@@ -50,7 +50,7 @@ def get_api_key():
 
     # Make sure it is a read-only file
     os.chmod(keyfile, 0600)
-    
+
     with open(keyfile, 'r') as fin:
         return fin.read().strip()
 
@@ -85,9 +85,12 @@ def init(key):
             raise click.ClickException('Unable to create directory to store the Shodan API key (%s)' % shodan_dir)
 
     # Store the API key in the user's directory
-    with open(shodan_dir + '/api_key', 'w') as fout:
+    keyfile = shodan_dir + '/api_key'
+    with open(keyfile, 'w') as fout:
         fout.write(key.strip())
         click.echo(click.style('Successfully initialized', fg='green'))
+
+    os.chmod(keyfile, 0600)
 
 
 @main.command()

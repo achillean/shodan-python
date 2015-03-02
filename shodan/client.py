@@ -6,21 +6,16 @@ shodan.client
 
 This module implements the Shodan API.
 
-:copyright: (c) 2014 by John Matherly
+:copyright: (c) 2014-2015 by John Matherly
 """
 
 import requests
 import simplejson
 import time
 
-
-class APIError(Exception):
-    """This exception gets raised whenever a non-200 status code was returned by the Shodan API."""
-    def __init__(self, value):
-        self.value = value
-    
-    def __str__(self):
-        return self.value
+import shodan.exception as exception
+import shodan.helpers as helpers
+import shodan.stream as stream
 
 
 class Shodan:
@@ -66,7 +61,7 @@ class Shodan:
                 'page': page,
             }
             if facets:
-                facet_str = self.parent._create_facet_string(facets)
+                facet_str = helpers.create_facet_string(facets)
                 query_args['facets'] = facet_str
 
             return self.parent._request('/api/search', query_args, service='exploits')
@@ -86,65 +81,10 @@ class Shodan:
                 'query': query,
             }
             if facets:
-                facet_str = self.parent._create_facet_string(facets)
+                facet_str = helpers.create_facet_string(facets)
                 query_args['facets'] = facet_str
 
             return self.parent._request('/api/count', query_args, service='exploits')
-
-    class Stream:
-
-        base_url = 'https://stream.shodan.io'
-
-        def __init__(self, parent):
-            self.parent = parent
-
-        def _create_stream(self, name):
-            try:
-                req = requests.get(self.base_url + name, params={'key': self.parent.api_key}, stream=True)
-            except:
-                raise APIError('Unable to contact the Shodan Streaming API')
-
-            if req.status_code != 200:
-                try:
-                    raise APIError(data.json()['error'])
-                except:
-                    pass
-                raise APIError('Invalid API key or you do not have access to the Streaming API')
-            return req
-
-        def banners(self):
-            """A real-time feed of the data that Shodan is currently collecting. Note that this is only available to
-            API subscription plans and for those it only returns a fraction of the data.
-            """
-            stream = self._create_stream('/shodan/banners')
-            for line in stream.iter_lines():
-                if line:
-                    banner = simplejson.loads(line)
-                    yield banner
-
-        def ports(self, ports):
-            """
-            A filtered version of the "banners" stream to only return banners that match the ports of interest.
-
-            :param ports: A list of ports to return banner data on.
-            :type ports: int[]
-            """
-            stream = self._create_stream('/shodan/ports/%s' % ','.join([str(port) for port in ports]))
-            for line in stream.iter_lines():
-                if line:
-                    banner = simplejson.loads(line)
-                    yield banner
-
-        def geo(self):
-            """
-            A stream of geolocation information for the banners. This is a stripped-down version of the "banners" stream
-            in case you only care about the geolocation information.
-            """
-            stream = self._create_stream('/shodan/geo')
-            for line in stream.iter_lines():
-                if line:
-                    banner = simplejson.loads(line)
-                    yield banner
     
     def __init__(self, key):
         """Initializes the API object.
@@ -157,7 +97,7 @@ class Shodan:
         self.base_exploits_url = 'https://exploits.shodan.io'
         self.exploits = self.Exploits(self)
         self.tools = self.Tools(self)
-        self.stream = self.Stream(self)
+        self.stream = stream.Stream(key)
     
     def _request(self, function, params, service='shodan', method='get'):
         """General-purpose function to create web requests to SHODAN.
@@ -186,41 +126,28 @@ class Shodan:
             else:
                 data = requests.get(base_url + function, params=params)
         except:
-            raise APIError('Unable to connect to Shodan')
+            raise exception.APIError('Unable to connect to Shodan')
 
         # Check that the API key wasn't rejected
         if data.status_code == 401:
             try:
-                raise APIError(data.json()['error'])
+                raise exception.APIError(data.json()['error'])
             except:
                 pass
-            raise APIError('Invalid API key')
+            raise exception.APIError('Invalid API key')
         
         # Parse the text into JSON
         try:
             data = data.json()
         except:
-            raise APIError('Unable to parse JSON response')
+            raise exception.APIError('Unable to parse JSON response')
         
         # Raise an exception if an error occurred
         if type(data) == dict and data.get('error', None):
-            raise APIError(data['error'])
+            raise exception.APIError(data['error'])
         
         # Return the data
         return data
-
-    def _create_facet_string(self, facets):
-        """Converts a Python list of facets into a comma-separated string that can be understood by
-        the Shodan API.
-        """
-        facet_str = ''
-        for facet in facets:
-            if isinstance(facet, basestring):
-                facet_str += facet
-            else:
-                facet_str += '%s:%s'  % (facet[0], facet[1])
-            facet_str += ','
-        return facet_str[:-1]
     
     def count(self, query, facets=None):
         """Returns the total number of search results for the query.
@@ -236,7 +163,7 @@ class Shodan:
             'query': query,
         }
         if facets:
-            facet_str = self._create_facet_string(facets)
+            facet_str = helpers.create_facet_string(facets)
             query_args['facets'] = facet_str
         return self._request('/shodan/host/count', query_args)
     
@@ -306,7 +233,7 @@ class Shodan:
             args['page'] = page
 
         if facets:
-            facet_str = self._create_facet_string(facets)
+            facet_str = helpers.create_facet_string(facets)
             args['facets'] = facet_str
         
         return self._request('/shodan/host/search', args)
@@ -420,4 +347,43 @@ class Shodan:
             'size': size,
         }
         return self._request('/shodan/query/tags', args)
+
+    def create_alert(self, name, ip, expires=0):
+        """Search the directory of saved search queries in Shodan.
+
+        :param query: The number of tags to return
+        :type page: int
+
+        :returns: A list of tags.
+        """
+        data = {
+            'name': name,
+            'filters': {
+                'ip': ip,
+            },
+            'expires': expires,
+        }
+
+        response = helpers.api_request(self.api_key, '/shodan/alert', data=data, params={}, base_url='https://oldapi.shodan.io', method='post')
+
+        return response
+
+    def alerts(self, aid=None):
+        """List all of the active alerts that the user created."""
+        if aid:
+            func = '/shodan/alert/%s/info' % aid
+        else:
+            func = '/shodan/alert/info'
+
+        response = helpers.api_request(self.api_key, func, params={}, base_url='https://oldapi.shodan.io')
+
+        return response
+
+    def delete_alert(self, aid):
+        """Delete the alert with the given ID."""
+        func = '/shodan/alert/%s' % aid
+
+        response = helpers.api_request(self.api_key, func, params={}, method='delete', base_url='https://oldapi.shodan.io')
+
+        return response
 

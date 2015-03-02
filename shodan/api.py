@@ -113,6 +113,7 @@ class WebAPI:
         key -- your API key
         
         """
+        print('WARNING: This class is deprecated, please upgrade to use "shodan.Shodan()" instead of shodan.WebAPI()')
         self.api_key = key
         self.base_url = 'http://www.shodanhq.com/api/'
         self.base_exploits_url = 'https://exploits.shodan.io/'

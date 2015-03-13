@@ -18,6 +18,7 @@ The following commands are currently supported:
 """
 
 import click
+import collections
 import datetime
 import gzip
 import os
@@ -91,6 +92,59 @@ def init(key):
         click.echo(click.style('Successfully initialized', fg='green'))
 
     os.chmod(keyfile, 0600)
+
+
+@main.group()
+def alert():
+    pass
+
+@alert.command(name='list')
+@click.option('--expired', help='Whether or not to show expired alerts.', default=True, type=bool)
+def alert_list(expired):
+    """Returns the number of results for a search"""
+    key = get_api_key()
+
+    # Get the list
+    api = shodan.Shodan(key)
+    try:
+        results = api.alerts(include_expired=expired)
+    except shodan.APIError, e:
+        raise click.ClickException(e.value)
+
+    if len(results) > 0:
+        click.echo('# {:14} {:<21} {:<15s}'.format('Alert ID', 'Name', 'IP/ Network'))
+        # click.echo('#' * 65)
+        for alert in results:
+            click.echo(
+                '{:16} {:<30} {:<35} '.format(
+                    click.style(alert['id'],  fg='yellow'),
+                    click.style(alert['name'], fg='cyan'),
+                    click.style(', '.join(alert['filters']['ip']), fg='white')
+                ),
+                nl=False
+            )
+
+            if 'expired' in alert and alert['expired']:
+                click.echo(click.style('expired', fg='red'))
+            else:
+                click.echo('')
+    else:
+        click.echo("You haven't created any alerts yet.")
+
+
+@alert.command(name='remove')
+@click.argument('alert_id', metavar='<alert ID>')
+def alert_remove(alert_id):
+    """Returns the number of results for a search"""
+    key = get_api_key()
+
+    # Get the list
+    api = shodan.Shodan(key)
+    try:
+        results = api.delete_alert(alert_id)
+    except shodan.APIError, e:
+        raise click.ClickException(e.value)
+    click.echo("Alert deleted")
 
 
 @main.command()
@@ -182,6 +236,21 @@ def download(limit, filename, query):
 
 
 @main.command()
+def info():
+    """Shows general information about your account"""
+    key = get_api_key()
+    api = shodan.Shodan(key)
+    try:
+        results = api.info()
+    except shodan.APIError, e:
+        raise click.ClickException(e.value)
+
+    click.echo("""Query credits available: {0}
+Scan credits available: {1}
+    """.format(results['query_credits'], results['scan_credits']))
+
+
+@main.command()
 @click.option('--color/--no-color', default=True)
 @click.option('--fields', help='List of properties to output.', default='ip_str,port,hostnames,data')
 @click.option('--separator', help='The separator between the properties of the search results.', default='\t')
@@ -247,17 +316,76 @@ def myip():
 
 
 @main.command()
+@click.option('--wait', help='How long to wait for results to come back. If this is set to "0" or below return immediately.', default=30, type=int)
 @click.argument('netblocks', metavar='<ip address>', nargs=-1)
-def scan(netblocks):
+def scan(wait, netblocks):
     """Scan an IP/ netblock using Shodan."""
     key = get_api_key()
     api = shodan.Shodan(key)
 
     # Submit the IPs for scanning
     try:
-        results = api.scan(netblocks)
+        # Setup an alert to wait for responses
+        alert = api.create_alert('Scan', netblocks)
 
-        click.echo(click.style('Success! ', fg='green') + '%s host(s) submitted (%s scan credits remaining)' % (results['count'], results['credits_left']))
+        # Submit the scan
+        scan = api.scan(netblocks)
+        click.echo(click.style('Success (%s)! ', fg='green') % scan['id'] + '%s host(s) submitted (%s scan credits remaining)' % (scan['count'], scan['credits_left']))
+
+        # Wait for responses
+        if wait > 0:
+            click.echo('Waiting for results...')
+
+            # Now wait a few seconds for items to get returned
+            hosts = collections.defaultdict(list)
+            done = False
+            while not done:
+                try:
+                    for banner in api.stream.alert(timeout=wait):
+                        click.echo('Open: {0}:{1}'.format(banner['ip_str'], banner['port']))
+                        hosts[banner['ip_str']].append(banner)
+                except shodan.APIError, e:
+                    if done:
+                        break
+
+                    scan = api.scan_status(scan['id'])
+                    if scan['status'] == 'DONE':
+                        done = True
+                except Exception, e:
+                    raise click.ClickException(repr(e))
+
+            # Cleanup
+            click.echo('Cleaning up...')
+            api.delete_alert(alert['id'])
+
+            if hosts:
+                click.echo('')
+                click.echo('Summary')
+                click.echo('-------')
+                click.echo('')
+
+                for ip in hosts:
+                    click.echo(click.style(ip, fg='cyan'))
+
+                    host = hosts[ip][-1]
+                    if 'location' in host and 'country_name' in host['location'] and host['location']['country_name']:
+                        click.echo('Country: {0}'.format(host['location']['country_name']))
+
+                        if 'city' in host['location'] and host['location']['city']:
+                            click.echo('City: {0}'.format(host['location']['city']))
+                    if 'org' in host and host['org']:
+                        click.echo('Organization: {0}'.format(host['org']))
+                    if 'os' in host and host['os']:
+                        click.echo('Operating system: {0}'.format(host['os']))
+                    click.echo('')
+
+                    # Print all the open ports:
+                    for banner in hosts[ip]:
+                        click.echo('Port: {0}'.format(click.style(str(banner['port']), fg='yellow')))
+                        click.echo(banner['data'].strip())
+                        click.echo('')
+            else:
+                click.echo('No open ports found or the host has been recently crawled and cant get scanned again so soon.')
     except shodan.APIError, e:
         raise click.ClickException(e.value)
 
@@ -360,7 +488,7 @@ def stats(limit, facets, query):
         print '# Top %s %s' % (limit, facet)
 
         for item in results['facets'][facet]:
-            print '  {:28s}'.format(item['value']), '{:12,d}'.format(item['count'])
+            print '  {:28s}'.format(item['value'].encode('ascii', errors='replace')), '{:12,d}'.format(item['count'])
 
         print ''
 

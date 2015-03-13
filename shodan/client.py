@@ -202,6 +202,16 @@ class Shodan:
         }
 
         return self._request('/shodan/scan', params, method='post')
+
+    def scan_status(self, scan_id):
+        """Get the status information about a previously submitted scan.
+
+        :param id: The unique ID for the scan that was submitted
+        :type id: str
+
+        :returns: A dictionary with general information about the scan, including its status in getting processed.
+        """
+        return self._request('/shodan/scan/%s' % scan_id, {})
     
     def search(self, query, page=1, limit=None, offset=None, facets=None, minify=True):
         """Search the SHODAN database.
@@ -364,18 +374,20 @@ class Shodan:
             'expires': expires,
         }
 
-        response = helpers.api_request(self.api_key, '/shodan/alert', data=data, params={}, base_url='https://oldapi.shodan.io', method='post')
+        response = helpers.api_request(self.api_key, '/shodan/alert', data=data, params={}, method='post')
 
         return response
 
-    def alerts(self, aid=None):
+    def alerts(self, aid=None, include_expired=True):
         """List all of the active alerts that the user created."""
         if aid:
             func = '/shodan/alert/%s/info' % aid
         else:
             func = '/shodan/alert/info'
 
-        response = helpers.api_request(self.api_key, func, params={}, base_url='https://oldapi.shodan.io')
+        response = helpers.api_request(self.api_key, func, params={
+            'include_expired': include_expired,
+            })
 
         return response
 
@@ -383,7 +395,7 @@ class Shodan:
         """Delete the alert with the given ID."""
         func = '/shodan/alert/%s' % aid
 
-        response = helpers.api_request(self.api_key, func, params={}, method='delete', base_url='https://oldapi.shodan.io')
+        response = helpers.api_request(self.api_key, func, params={}, method='delete')
 
         return response
 

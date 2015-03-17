@@ -186,6 +186,13 @@ class Shodan:
         """
         return self._request('/api-info', {})
 
+    def protocols(self):
+        """Get a list of protocols that the Shodan on-demand scanning API supports.
+
+        :returns: A dictionary containing the protocol name and description.
+        """
+        return self._request('/shodan/protocols', {})
+
     def scan(self, ips):
         """Scan a network using Shodan
 
@@ -202,6 +209,23 @@ class Shodan:
         }
 
         return self._request('/shodan/scan', params, method='post')
+
+    def scan_internet(self, port, protocol):
+        """Scan a network using Shodan
+
+        :param port: The port that should get scanned.
+        :type port: int
+        :param port: The name of the protocol as returned by the protocols() method.
+        :type port: str
+
+        :returns: A dictionary with a unique ID to check on the scan progress.
+        """
+        params = {
+            'port': port,
+            'protocol': protocol,
+        }
+
+        return self._request('/shodan/scan/internet', params, method='post')
 
     def scan_status(self, scan_id):
         """Get the status information about a previously submitted scan.

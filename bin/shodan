@@ -315,10 +315,90 @@ def myip():
         raise click.ClickException(e.value)
 
 
-@main.command()
+@main.group()
+def scan():
+    pass
+
+
+@scan.command(name='internet')
+@click.option('--quiet', help='Disable the printing of information to the screen.', default=False, is_flag=True)
+@click.argument('port', type=int)
+@click.argument('protocol', type=str)
+def scan_internet(quiet, port, protocol):
+    """Scan the Internet for a specific port and protocol using the Shodan infrastructure."""
+    key = get_api_key()
+    api = shodan.Shodan(key)
+
+    try:
+        # Submit the request to Shodan
+        click.echo('Submitting Internet scan to Shodan...', nl=False)
+        scan = api.scan_internet(port, protocol)
+        click.echo('Done')
+
+        # Create the output file
+        filename = '{0}-{1}.json.gz'.format(port, protocol)
+        counter = 0
+        with gzip.open(filename, 'w') as fout:
+            click.echo('Saving results to file: {0}'.format(filename))
+
+            # Start listening for results
+            done = False
+
+            # Keep listening for results until the scan is done
+            click.echo('Waiting for data, please stand by...')
+            while not done:
+                try:
+                    for banner in api.stream.ports([port]):
+                        counter += 1
+                        fout.write(simplejson.dumps(banner) + '\n')
+
+                        if not quiet:
+                            click.echo('{0:<40} {1:<20} {2}'.format(
+                                    click.style(banner['ip_str'], fg=COLORIZE_FIELDS['ip_str']),
+                                    click.style(str(banner['port']), fg=COLORIZE_FIELDS['port']),
+                                    ';'.join(banner['hostnames'])
+                                )
+                            )
+
+                        # Check the scan status every few records
+                        if counter % 10000:
+                            scan = api.scan_status(scan['id'])
+                            if scan['status'] == 'DONE':
+                                done = True
+
+                except shodan.APIError, e:
+                    if done:
+                        break
+
+                    scan = api.scan_status(scan['id'])
+                    if scan['status'] == 'DONE':
+                        done = True
+                except Exception, e:
+                    raise click.ClickException(repr(e))
+        click.echo('Scan finished: {0} devices found'.format(counter))
+
+    except shodan.APIError, e:
+        raise click.ClickException(e.value)
+
+
+@scan.command(name='protocols')
+def scan_protocols():
+    """List the protocols that you can scan with using Shodan."""
+    key = get_api_key()
+    api = shodan.Shodan(key)
+    try:
+        protocols = api.protocols()
+
+        for name, description in protocols.iteritems():
+            click.echo(click.style('{0:<30}'.format(name), fg='cyan') + description)
+    except shodan.APIError, e:
+        raise click.ClickException(e.value)
+
+
+@scan.command(name='submit')
 @click.option('--wait', help='How long to wait for results to come back. If this is set to "0" or below return immediately.', default=30, type=int)
 @click.argument('netblocks', metavar='<ip address>', nargs=-1)
-def scan(wait, netblocks):
+def scan_submit(wait, netblocks):
     """Scan an IP/ netblock using Shodan."""
     key = get_api_key()
     api = shodan.Shodan(key)

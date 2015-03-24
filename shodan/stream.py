@@ -24,7 +24,7 @@ class Stream:
             raise exception.APIError('Invalid API key or you do not have access to the Streaming API')
         return req
 
-    def alert(self, aid=None, timeout=None, raw = False):
+    def alert(self, aid=None, timeout=None, raw=False):
         if aid:
             stream = self._create_stream('/shodan/alert/%s' % aid, timeout=timeout)
         else:
@@ -41,7 +41,7 @@ class Stream:
         except requests.exceptions.ConnectionError, e:
             raise exception.APIError('Stream timed out')
 
-    def banners(self, raw = False):
+    def banners(self, raw=False):
         """A real-time feed of the data that Shodan is currently collecting. Note that this is only available to
         API subscription plans and for those it only returns a fraction of the data.
         """
@@ -54,7 +54,7 @@ class Stream:
                     banner = simplejson.loads(line)
                     yield banner
 
-    def ports(self, ports, raw = False):
+    def ports(self, ports, raw=False):
         """
         A filtered version of the "banners" stream to only return banners that match the ports of interest.
 
@@ -70,7 +70,7 @@ class Stream:
                     banner = simplejson.loads(line)
                     yield banner
 
-    def geo(self, raw = False):
+    def geo(self, raw=False):
         """
         A stream of geolocation information for the banners. This is a stripped-down version of the "banners" stream
         in case you only care about the geolocation information.

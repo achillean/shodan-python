@@ -36,6 +36,7 @@ COLORIZE_FIELDS = {
     'data': 'white',
     'hostnames': 'magenta',
     'org': 'cyan',
+    'vulns': 'red',
 }
 
 
@@ -236,6 +237,82 @@ def download(limit, filename, query):
 
 
 @main.command()
+@click.option('--format', help='The output format for the host information. Possible values are: pretty, csv, tsv. (placeholder)', default='pretty', type=str)
+@click.argument('ip', metavar='<ip address>')
+def host(format, ip):
+    """Scan an IP/ netblock using Shodan."""
+    key = get_api_key()
+    api = shodan.Shodan(key)
+
+    try:
+        host = api.host(ip)
+
+        # General info
+        click.echo(click.style(ip, fg='green'))
+        if len(host['hostnames']) > 0:
+            click.echo('{:25s}{}'.format('Hostnames:', ';'.join(host['hostnames'])))
+
+        if 'city' in host and host['city']:
+            click.echo('{:25s}{}'.format('City:', host['city']))
+
+        if 'country_name' in host and host['country_name']:
+            click.echo('{:25s}{}'.format('Country:', host['country_name']))
+
+        if 'os' in host and host['os']:
+            click.echo('{:25s}{}'.format('Operating System:', host['os']))
+
+        if 'org' in host and host['org']:
+            click.echo('{:25s}{}'.format('Organization:', host['org']))
+
+        click.echo('{:25s}{}'.format('Number of open ports:', len(host['ports'])))
+
+        # Output the vulnerabilities the host has
+        if 'vulns' in host and len(host['vulns']) > 0:
+            vulns = []
+            for vuln in host['vulns']:
+                if vuln.startswith('!'):
+                    continue
+                if vuln.upper() == 'CVE-2014-0160':
+                    vulns.append(click.style('Heartbleed', fg='red'))
+                else:
+                    vulns.append(click.style(vuln, fg='red'))
+
+            if len(vulns) > 0:
+                click.echo('{:25s}'.format('Vulnerabilities:'), nl=False)
+
+                for vuln in vulns:
+                    click.echo(vuln + '\t', nl=False)
+
+                click.echo('')
+
+        click.echo('')
+
+        click.echo('Ports:')
+        for banner in sorted(host['data'], key=lambda k: k['port']):
+            product = ''
+            version = ''
+            if 'product' in banner:
+                product = banner['product']
+            if 'version' in banner:
+                version = '({})'.format(banner['version'])
+
+            click.echo(click.style('{:>7d} '.format(banner['port']), fg='cyan'), nl=False)
+            click.echo('{} {}'.format(product, version))
+
+            # Show optional ssl info
+            if 'ssl' in banner:
+                if 'versions' in banner['ssl']:
+                    click.echo('\t|-- SSL Versions: {}'.format(', '.join([version for version in sorted(banner['ssl']['versions']) if not version.startswith('-')])))
+                if 'dhparams' in banner['ssl']:
+                    click.echo('\t|-- Diffie-Hellman Parameters:')
+                    click.echo('\t\t{:15s}{}\n\t\t{:15s}{}'.format('Bits:', banner['ssl']['dhparams']['bits'], 'Generator:', banner['ssl']['dhparams']['generator']))
+                    if 'fingerprint' in banner['ssl']['dhparams']:
+                        click.echo('\t\t{:15s}{}'.format('Fingerprint:', banner['ssl']['dhparams']['fingerprint']))
+    except shodan.APIError, e:
+        raise click.ClickException(e.value)
+
+
+@main.command()
 def info():
     """Shows general information about your account"""
     key = get_api_key()
@@ -396,7 +473,7 @@ def scan_protocols():
 
 
 @scan.command(name='submit')
-@click.option('--wait', help='How long to wait for results to come back. If this is set to "0" or below return immediately.', default=30, type=int)
+@click.option('--wait', help='How long to wait for results to come back. If this is set to "0" or below return immediately.', default=0, type=int)
 @click.argument('netblocks', metavar='<ip address>', nargs=-1)
 def scan_submit(wait, netblocks):
     """Scan an IP/ netblock using Shodan."""

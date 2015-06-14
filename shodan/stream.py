@@ -18,6 +18,7 @@ class Stream:
 
         if req.status_code != 200:
             try:
+                req.close()
                 raise exception.APIError(data.json()['error'])
             except:
                 pass

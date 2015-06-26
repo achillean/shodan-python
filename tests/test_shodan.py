@@ -1,7 +1,8 @@
-import unittest
-import shodan
+from unittest import TestCase
+from shodan import Shodan, APIError
+from os import path
 
-class ShodanTests(unittest.TestCase):
+class ShodanTests(TestCase):
 
 	api = None
 	FACETS = [
@@ -16,7 +17,8 @@ class ShodanTests(unittest.TestCase):
 	}
 
 	def setUp(self):
-		self.api = shodan.Shodan(open('SHODAN-API-KEY').read().strip())
+		self.api_key = open(path.expanduser('~/.shodan') + '/api_key').read().strip()
+		self.api = Shodan(self.api_key)
 
 	def test_search_simple(self):
 		results = self.api.search(self.QUERIES['simple'])
@@ -111,11 +113,11 @@ class ShodanTests(unittest.TestCase):
 
 	# Test error responses
 	def test_invalid_key(self):
-		api = shodan.Shodan('garbage')
+		api = Shodan('garbage')
 		raised = False
 		try:
 			api.search('something')
-		except shodan.APIError, e:
+		except APIError, e:
 			raised = True
 
 		self.assertTrue(raised)
@@ -124,7 +126,7 @@ class ShodanTests(unittest.TestCase):
 		raised = False
 		try:
 			host = self.api.host('test')
-		except shodan.APIError, e:
+		except APIError, e:
 			raised = True
 
 		self.assertTrue(raised)
@@ -133,7 +135,7 @@ class ShodanTests(unittest.TestCase):
 		raised = False
 		try:
 			self.api.search('')
-		except shodan.APIError, e:
+		except APIError, e:
 			raised = True
 		self.assertTrue(raised)
 
@@ -142,6 +144,6 @@ class ShodanTests(unittest.TestCase):
 		raised = False
 		try:
 			self.api.search(self.QUERIES['advanced'])
-		except shodan.APIError, e:
+		except APIError, e:
 			raised = True
 		self.assertTrue(raised)

@@ -29,6 +29,17 @@ Or if you don't have pip installed (which you should seriously install):
     $ easy_install shodan
 
 
+Development
+-----------
+
+To install and develop the Shodan library and, simply execute:
+
+.. code-block:: bash
+
+    $ python2 setup.py develop
+
+
+
 Documentation
 -------------
 

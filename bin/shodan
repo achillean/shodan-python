@@ -482,9 +482,6 @@ def scan_submit(wait, netblocks):
 
     # Submit the IPs for scanning
     try:
-        # Setup an alert to wait for responses
-        alert = api.create_alert('Scan', netblocks)
-
         # Submit the scan
         scan = api.scan(netblocks)
         click.echo(click.style('Success (%s)! ', fg='green') % scan['id'] + '%s host(s) submitted (%s scan credits remaining)' % (scan['count'], scan['credits_left']))
@@ -492,6 +489,8 @@ def scan_submit(wait, netblocks):
         # Wait for responses
         if wait > 0:
             click.echo('Waiting for results...')
+            # Setup an alert to wait for responses
+            alert = api.create_alert('Scan', netblocks)
 
             # Now wait a few seconds for items to get returned
             hosts = collections.defaultdict(list)

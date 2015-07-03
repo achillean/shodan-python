@@ -18,6 +18,13 @@ import shodan.helpers as helpers
 import shodan.stream as stream
 
 
+# Try to disable the SSL warnings in urllib3
+try:
+    requests.packages.urllib3.disable_warnings()
+except:
+    pass
+
+
 class Shodan:
     """Wrapper around the Shodan REST and Streaming APIs
 

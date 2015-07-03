@@ -4,7 +4,7 @@ from distutils.core import setup
 
 setup(
     name = 'shodan',
-    version = '1.3.4',
+    version = '1.3.5',
     description = 'Python library and command-line utility for Shodan (https://developer.shodan.io)',
     author = 'John Matherly',
     author_email = 'jmath@shodan.io',

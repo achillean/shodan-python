@@ -18,7 +18,12 @@ import shodan.helpers as helpers
 import shodan.stream as stream
 
 
-# Try to disable the SSL warnings in urllib3
+# Try to disable the SSL warnings in urllib3 since not everybody can install
+# C extensions. If you're able to install C extensions you can try to run:
+#
+# pip install requests[security]
+#
+# Which will download libraries that offer more full-featured SSL classes
 try:
     requests.packages.urllib3.disable_warnings()
 except:

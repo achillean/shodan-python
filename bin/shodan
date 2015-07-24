@@ -496,7 +496,7 @@ def scan_protocols():
 
 
 @scan.command(name='submit')
-@click.option('--wait', help='How long to wait for results to come back. If this is set to "0" or below return immediately.', default=10, type=int)
+@click.option('--wait', help='How long to wait for results to come back. If this is set to "0" or below return immediately.', default=20, type=int)
 @click.option('--filename', help='Save the results in the given file.', default='', type=str)
 @click.argument('netblocks', metavar='<ip address>', nargs=-1)
 def scan_submit(wait, filename, netblocks):
@@ -514,7 +514,6 @@ def scan_submit(wait, filename, netblocks):
 
         click.echo('')
         click.echo('Starting Shodan scan at {} ({} scan credits left)'.format(now, scan['credits_left']))
-        # click.echo(click.style('Success (%s)! ', fg='green') % scan['id'] + '%s host(s) submitted (%s scan credits remaining)' % (scan['count'], scan['credits_left']))
 
         # Return immediately
         if wait <= 0:
@@ -563,6 +562,14 @@ def scan_submit(wait, filename, netblocks):
                                 break
 
                 except shodan.APIError, e:
+                    # If the connection timed out before the timeout, that means the streaming server
+                    # that the user tried to reach is down. In that case, lets wait briefly and try
+                    # to connect again!
+                    if (time.time() - scan_start) < wait:
+                        time.sleep(0.5)
+                        continue
+
+                    # Exit if the scan was flagged as done somehow
                     if done:
                         break
 
@@ -570,6 +577,12 @@ def scan_submit(wait, filename, netblocks):
                     if scan['status'] == 'DONE':
                         done = True
                 except socket.timeout, e:
+                    # If the connection timed out before the timeout, that means the streaming server
+                    # that the user tried to reach is down. In that case, lets wait a second and try
+                    # to connect again!
+                    if (time.time() - scan_start) < wait:
+                        continue
+
                     done = True
                 except Exception, e:
                     raise click.ClickException(repr(e))
@@ -609,7 +622,7 @@ def scan_submit(wait, filename, netblocks):
                 click.echo('\b ')
 
                 for ip in sorted(hosts):
-                    host = hosts[ip].items()[0]
+                    host = hosts[ip].items()[0][1]
 
                     click.echo(click.style(ip, fg='cyan'), nl=False)
                     if 'hostnames' in host and host['hostnames']:

@@ -17,7 +17,7 @@ def create_facet_string(facets):
     return facet_str[:-1]
 
     
-def api_request(key, function, params=None, data=None, base_url='https://api.shodan.io', method='get'):
+def api_request(key, function, params=None, data=None, base_url='https://api.shodan.io', method='get', retries=1):
     """General-purpose function to create web requests to SHODAN.
     
     Arguments:
@@ -32,14 +32,24 @@ def api_request(key, function, params=None, data=None, base_url='https://api.sho
     params['key'] = key
 
     # Send the request
-    try:
-        if method.lower() == 'post':
-            data = requests.post(base_url + function, simplejson.dumps(data), params=params, headers={'content-type': 'application/json'})
-        elif method.lower() == 'delete':
-            data = requests.delete(base_url + function, params=params)
-        else:
-            data = requests.get(base_url + function, params=params)
-    except:
+    tries = 0
+    error = False
+    while tries <= retries:
+        try:
+            if method.lower() == 'post':
+                data = requests.post(base_url + function, simplejson.dumps(data), params=params, headers={'content-type': 'application/json'})
+            elif method.lower() == 'delete':
+                data = requests.delete(base_url + function, params=params)
+            else:
+                data = requests.get(base_url + function, params=params)
+
+            # Exit out of the loop
+            break
+        except:
+            error = True
+            tries += 1
+
+    if error and tries >= retries:
         raise shodan.exception.APIError('Unable to connect to Shodan')
 
     # Check that the API key wasn't rejected

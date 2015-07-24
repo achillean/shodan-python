@@ -1,6 +1,7 @@
 import requests
 import simplejson
 
+import socket
 import shodan.exception as exception
 
 class Stream:
@@ -13,14 +14,16 @@ class Stream:
     def _create_stream(self, name, timeout=None):
         try:
             req = requests.get(self.base_url + name, params={'key': self.api_key}, stream=True, timeout=timeout)
-        except:
+        except Exception, e:
             raise exception.APIError('Unable to contact the Shodan Streaming API')
 
         if req.status_code != 200:
             try:
-                req.close()
-                raise exception.APIError(data.json()['error'])
-            except:
+                data = simplejson.loads(req.text)
+                raise exception.APIError(data['error'])
+            except exception.APIError, e:
+                raise
+            except Exception, e:
                 pass
             raise exception.APIError('Invalid API key or you do not have access to the Streaming API')
         return req

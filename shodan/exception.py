@@ -6,3 +6,7 @@ class APIError(Exception):
     
     def __str__(self):
         return self.value
+
+class APITimeout(APIError):
+	pass
+

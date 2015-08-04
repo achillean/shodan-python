@@ -448,7 +448,7 @@ def scan_internet(quiet, port, protocol):
         # let the user decide when to stop waiting for further results.
         official_ports = api.ports()
         if port in official_ports:
-            click.echo('The request port is already indexed by Shodan. A new scan for the port has been launched, please subscribe to the real-time stream for results.')
+            click.echo('The requested port is already indexed by Shodan. A new scan for the port has been launched, please subscribe to the real-time stream for results.')
         else:
             # Create the output file
             filename = '{0}-{1}.json.gz'.format(port, protocol)

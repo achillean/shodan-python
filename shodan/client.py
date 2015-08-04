@@ -198,6 +198,13 @@ class Shodan:
         """
         return self._request('/api-info', {})
 
+    def ports(self):
+        """Get a list of ports that Shodan crawls
+
+        :returns: An array containing the ports that Shodan crawls for.
+        """
+        return self._request('/shodan/ports', {})
+
     def protocols(self):
         """Get a list of protocols that the Shodan on-demand scanning API supports.
 

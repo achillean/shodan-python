@@ -92,6 +92,14 @@ def init(key):
         except OSError:
             raise click.ClickException('Unable to create directory to store the Shodan API key (%s)' % shodan_dir)
 
+    # Make sure it's a valid API key
+    key = key.strip()
+    try:
+        api = shodan.Shodan(key)
+        test = api.info()
+    except shodan.APIError, e:
+        raise click.ClickException('Invalid API key')
+
     # Store the API key in the user's directory
     keyfile = shodan_dir + '/api_key'
     with open(keyfile, 'w') as fout:
@@ -435,48 +443,49 @@ def scan_internet(quiet, port, protocol):
         scan = api.scan_internet(port, protocol)
         click.echo('Done')
 
-        # Create the output file
-        filename = '{0}-{1}.json.gz'.format(port, protocol)
-        counter = 0
-        with gzip.open(filename, 'w') as fout:
-            click.echo('Saving results to file: {0}'.format(filename))
+        # If the requested port is part of the regular Shodan crawling, then
+        # we don't know when the scan is done so lets return immediately and
+        # let the user decide when to stop waiting for further results.
+        official_ports = api.ports()
+        if port in official_ports:
+            click.echo('The request port is already indexed by Shodan. A new scan for the port has been launched, please subscribe to the real-time stream for results.')
+        else:
+            # Create the output file
+            filename = '{0}-{1}.json.gz'.format(port, protocol)
+            counter = 0
+            with gzip.open(filename, 'w') as fout:
+                click.echo('Saving results to file: {0}'.format(filename))
 
-            # Start listening for results
-            done = False
+                # Start listening for results
+                done = False
 
-            # Keep listening for results until the scan is done
-            click.echo('Waiting for data, please stand by...')
-            while not done:
-                try:
-                    for banner in api.stream.ports([port]):
-                        counter += 1
-                        fout.write(simplejson.dumps(banner) + '\n')
+                # Keep listening for results until the scan is done
+                click.echo('Waiting for data, please stand by...')
+                while not done:
+                    try:
+                        for banner in api.stream.ports([port], timeout=30):
+                            counter += 1
+                            fout.write(simplejson.dumps(banner) + '\n')
 
-                        if not quiet:
-                            click.echo('{0:<40} {1:<20} {2}'.format(
-                                    click.style(banner['ip_str'], fg=COLORIZE_FIELDS['ip_str']),
-                                    click.style(str(banner['port']), fg=COLORIZE_FIELDS['port']),
-                                    ';'.join(banner['hostnames'])
+                            if not quiet:
+                                click.echo('{0:<40} {1:<20} {2}'.format(
+                                        click.style(banner['ip_str'], fg=COLORIZE_FIELDS['ip_str']),
+                                        click.style(str(banner['port']), fg=COLORIZE_FIELDS['port']),
+                                        ';'.join(banner['hostnames'])
+                                    )
                                 )
-                            )
+                    except shodan.APIError, e:
+                        # We stop waiting for results if the scan has been processed by the crawlers and
+                        # there haven't been new results in a while
+                        if done:
+                            break
 
-                        # Check the scan status every few records
-                        if counter % 10000:
-                            scan = api.scan_status(scan['id'])
-                            if scan['status'] == 'DONE':
-                                done = True
-
-                except shodan.APIError, e:
-                    if done:
-                        break
-
-                    scan = api.scan_status(scan['id'])
-                    if scan['status'] == 'DONE':
-                        done = True
-                except Exception, e:
-                    raise click.ClickException(repr(e))
-        click.echo('Scan finished: {0} devices found'.format(counter))
-
+                        scan = api.scan_status(scan['id'])
+                        if scan['status'] == 'DONE':
+                            done = True
+                    except Exception, e:
+                        raise click.ClickException(repr(e))
+            click.echo('Scan finished: {0} devices found'.format(counter))
     except shodan.APIError, e:
         raise click.ClickException(e.value)
 

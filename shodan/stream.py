@@ -45,11 +45,11 @@ class Stream:
         except requests.exceptions.ConnectionError, e:
             raise exception.APIError('Stream timed out')
 
-    def banners(self, raw=False):
+    def banners(self, raw=False, timeout=None):
         """A real-time feed of the data that Shodan is currently collecting. Note that this is only available to
         API subscription plans and for those it only returns a fraction of the data.
         """
-        stream = self._create_stream('/shodan/banners')
+        stream = self._create_stream('/shodan/banners', timeout=timeout)
         for line in stream.iter_lines():
             if line:
                 if raw:
@@ -58,28 +58,14 @@ class Stream:
                     banner = simplejson.loads(line)
                     yield banner
 
-    def ports(self, ports, raw=False):
+    def ports(self, ports, raw=False, timeout=None):
         """
         A filtered version of the "banners" stream to only return banners that match the ports of interest.
 
         :param ports: A list of ports to return banner data on.
         :type ports: int[]
         """
-        stream = self._create_stream('/shodan/ports/%s' % ','.join([str(port) for port in ports]))
-        for line in stream.iter_lines():
-            if line:
-                if raw:
-                    yield line
-                else:
-                    banner = simplejson.loads(line)
-                    yield banner
-
-    def geo(self, raw=False):
-        """
-        A stream of geolocation information for the banners. This is a stripped-down version of the "banners" stream
-        in case you only care about the geolocation information.
-        """
-        stream = self._create_stream('/shodan/geo')
+        stream = self._create_stream('/shodan/ports/%s' % ','.join([str(port) for port in ports]), timeout=timeout)
         for line in stream.iter_lines():
             if line:
                 if raw:

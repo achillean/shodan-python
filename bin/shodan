@@ -7,8 +7,10 @@ Note: Always run "shodan init <api key>" before trying to execute any other comm
 A simple interface to search Shodan, download data and parse compressed JSON files.
 The following commands are currently supported:
 
+    alert
     count
     download
+    host
     init
     myip
     parse
@@ -73,6 +75,57 @@ def timestr():
 
 def open_file(directory, timestr):
         return gzip.open('%s/%s.json.gz' % (directory, timestr), 'a', 1)
+
+def iterate_files(files):
+    for filename in files:
+        # Create a file handle depending on the filetype
+        if filename.endswith('.gz'):
+            fin = gzip.open(filename, 'r')
+        else:
+            fin = open(filename, 'r')
+
+        for line in fin:
+            # Convert the JSON into a native Python object
+            banner = simplejson.loads(line)
+            yield banner
+
+def get_banner_field(banner, flat_field):
+    # The provided field is a collapsed form of the actual field
+    fields = flat_field.split('.')
+
+    try:
+        current_obj = banner
+        for field in fields:
+            current_obj = current_obj[field]
+        return current_obj
+    except:
+        pass
+
+    return None
+
+def match_filters(banner, filters):
+    for args in filters:
+        flat_field, check = args.split(':')
+        value = get_banner_field(banner, flat_field)
+
+        # It must match all filters to be allowed
+        field_type = type(value)
+
+        # For lists of strings we see whether the desired value is contained in the field
+        if field_type == list or isinstance(value, basestring):
+            if check not in value:
+                return False
+        elif field_type == int:
+            if int(check) != value:
+                return False
+        elif field_type == float:
+            if float(check) != value:
+                return False
+        else:
+            # Ignore unknown types
+            pass
+
+    return True
 
 
 @click.group(context_settings=CONTEXT_SETTINGS)
@@ -361,44 +414,58 @@ Scan credits available: {1}
 @main.command()
 @click.option('--color/--no-color', default=True)
 @click.option('--fields', help='List of properties to output.', default='ip_str,port,hostnames,data')
+@click.option('--filters', '-f', help='Filter the results for specific values using key:value pairs.', multiple=True)
+@click.option('--filename', '-O', help='Save the filtered results in the given file (append if file exists).')
 @click.option('--separator', help='The separator between the properties of the search results.', default='\t')
-@click.argument('filename', metavar='<filename>', type=click.Path(exists=True))
-def parse(color, fields, separator, filename):
+@click.argument('filenames', metavar='<filenames>', type=click.Path(exists=True), nargs=-1)
+def parse(color, fields, filters, filename, separator, filenames):
     """Extract information out of compressed JSON files."""
-    # Make sure it's some sort of json file
-    if not filename.endswith('.json.gz') and not filename.endswith('.json'):
-        raise click.ClickException('Invalid file, please make sure it is a valid Shodan JSON file')
-
     # Strip out any whitespace in the fields and turn them into an array
     fields = [item.strip() for item in fields.split(',')]
 
     if len(fields) == 0:
         raise click.ClickException('Please define at least one property to show')
 
-    # Create a file handle depending on the filetype
-    if filename.endswith('.gz'):
-        fin = gzip.open(filename, 'r')
-    else:
-        fin = open(filename, 'r')
+    has_filters = len(filters) > 0
 
-    for line in fin:
-        # Convert the JSON into a native Python object
-        banner = simplejson.loads(line)
+
+    # Setup the output file handle
+    fout = None
+    if filename:
+        # If no filters were provided raise an error since it doesn't make much sense w/out them
+        if not has_filters:
+            raise click.ClickException('Output file specified without any filters. Need to use filters with this option.')
+
+        # Add the appropriate extension if it's not there atm
+        if not filename.endswith('.json.gz'):
+            filename += '.json.gz'
+        fout = gzip.open(filename, 'a')
+
+    for banner in iterate_files(filenames):
         row = ''
+
+        # Validate the banner against any provided filters
+        if has_filters and not match_filters(banner, filters):
+            continue
+
+        # Append the data
+        if fout:
+            fout.write(simplejson.dumps(banner) + '\n')
 
         # Loop over all the fields and print the banner as a row
         for field in fields:
             tmp = ''
-            if field in banner and banner[field]:
-                field_type = type(banner[field])
+            value = get_banner_field(banner, field)
+            if value:
+                field_type = type(value)
 
                 # If the field is an array then merge it together
                 if field_type == list:
-                    tmp = ';'.join(banner[field])
+                    tmp = ';'.join(value)
                 elif field_type in [int, float]:
-                    tmp = str(banner[field])
+                    tmp = str(value)
                 else:
-                    tmp = escape_data(banner[field])
+                    tmp = escape_data(value)
 
                 # Colorize certain fields if the user wants it
                 if color:
@@ -475,6 +542,15 @@ def scan_internet(quiet, port, protocol):
                                     )
                                 )
                     except shodan.APIError, e:
+                        # We stop waiting for results if the scan has been processed by the crawlers and
+                        # there haven't been new results in a while
+                        if done:
+                            break
+
+                        scan = api.scan_status(scan['id'])
+                        if scan['status'] == 'DONE':
+                            done = True
+                    except socket.timeout, e:
                         # We stop waiting for results if the scan has been processed by the crawlers and
                         # there haven't been new results in a while
                         if done:

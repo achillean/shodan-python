@@ -3,6 +3,11 @@ import simplejson
 
 from .exception import APIError
 
+try:
+    basestring
+except NameError:
+    basestring = str
+
 
 def create_facet_string(facets):
     """Converts a Python list of facets into a comma-separated string that can be understood by

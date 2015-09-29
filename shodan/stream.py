@@ -5,6 +5,7 @@ import simplejson
 
 from .exception import APIError
 
+
 class Stream:
 
     base_url = 'https://stream.shodan.io'

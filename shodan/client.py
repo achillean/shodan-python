@@ -8,10 +8,10 @@ This module implements the Shodan API.
 
 :copyright: (c) 2014-2015 by John Matherly
 """
+import time
 
 import requests
 import simplejson
-import time
 
 from .exception import APIError
 from .helpers import *

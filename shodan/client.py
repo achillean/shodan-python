@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 """
 shodan.client
 ~~~~~~~~~~~~~
@@ -14,7 +13,7 @@ import requests
 import simplejson
 
 from .exception import APIError
-from .helpers import *
+from .helpers import api_request, create_facet_string
 from .stream import Stream
 
 
@@ -73,8 +72,7 @@ class Shodan:
                 'page': page,
             }
             if facets:
-                facet_str = helpers.create_facet_string(facets)
-                query_args['facets'] = facet_str
+                query_args['facets'] = create_facet_string(facets)
 
             return self.parent._request('/api/search', query_args, service='exploits')
             
@@ -93,8 +91,7 @@ class Shodan:
                 'query': query,
             }
             if facets:
-                facet_str = helpers.create_facet_string(facets)
-                query_args['facets'] = facet_str
+                query_args['facets'] = create_facet_string(facets)
 
             return self.parent._request('/api/count', query_args, service='exploits')
     
@@ -175,8 +172,7 @@ class Shodan:
             'query': query,
         }
         if facets:
-            facet_str = helpers.create_facet_string(facets)
-            query_args['facets'] = facet_str
+            query_args['facets'] = create_facet_string(facets)
         return self._request('/shodan/host/count', query_args)
     
     def host(self, ip, history=False):
@@ -286,8 +282,7 @@ class Shodan:
             args['page'] = page
 
         if facets:
-            facet_str = helpers.create_facet_string(facets)
-            args['facets'] = facet_str
+            args['facets'] = create_facet_string(facets)
         
         return self._request('/shodan/host/search', args)
     
@@ -417,7 +412,7 @@ class Shodan:
             'expires': expires,
         }
 
-        response = helpers.api_request(self.api_key, '/shodan/alert', data=data, params={}, method='post')
+        response = api_request(self.api_key, '/shodan/alert', data=data, params={}, method='post')
 
         return response
 
@@ -428,7 +423,7 @@ class Shodan:
         else:
             func = '/shodan/alert/info'
 
-        response = helpers.api_request(self.api_key, func, params={
+        response = api_request(self.api_key, func, params={
             'include_expired': include_expired,
             })
 
@@ -438,7 +433,7 @@ class Shodan:
         """Delete the alert with the given ID."""
         func = '/shodan/alert/%s' % aid
 
-        response = helpers.api_request(self.api_key, func, params={}, method='delete')
+        response = api_request(self.api_key, func, params={}, method='delete')
 
         return response
 

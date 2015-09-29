@@ -40,7 +40,7 @@ class WebAPI:
             
             """
             if sources:
-                query += ' source:' + ','.join(sources)
+                query += ' source:%s' % (','.join(sources))
             if cve:
                 query += ' cve:%s' % (str(cve).strip())
             if osvdb:
@@ -76,6 +76,7 @@ class WebAPI:
             A dictionary with 2 main items: matches (list) and total (int).
             """
             return self.parent.search(query, sources=['exploitdb'])
+
     
     class Msf:
         
@@ -143,7 +144,7 @@ class WebAPI:
         except:
             raise WebAPIError('Unable to connect to Shodan')
         
-        # Parse the text into JSON
+        # Parse the text from JSON to a dict
         data = loads(data)
         
         # Raise an exception if an error occurred
@@ -216,7 +217,7 @@ class WebAPI:
         }
         if limit:
             args['l'] = limit
-            if offset:
-                args['o'] = offset
+        if offset:
+            args['o'] = offset
         
         return self._request('search', args)

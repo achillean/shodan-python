@@ -1,5 +1,3 @@
-import socket
-
 import requests
 import simplejson
 
@@ -21,7 +19,7 @@ class Stream:
 
         if req.status_code != 200:
             try:
-                data = simplejson.loads(req.text)
+                data = req.json()
                 raise APIError(data['error'])
             except APIError as e:
                 raise
@@ -30,35 +28,29 @@ class Stream:
             raise APIError('Invalid API key or you do not have access to the Streaming API')
         return req
 
+    def _iter_stream(self, stream, raw):
+        for line in stream.iter_lines():
+            if line:
+                if raw:
+                    yield line
+                else:
+                    yield simplejson.loads(line)
+
     def alert(self, aid=None, timeout=None, raw=False):
         if aid:
             stream = self._create_stream('/shodan/alert/%s' % aid, timeout=timeout)
         else:
             stream = self._create_stream('/shodan/alert', timeout=timeout)
-
-        try:
-            for line in stream.iter_lines():
-                if line:
-                    if raw:
-                        yield line
-                    else:
-                        banner = simplejson.loads(line)
-                        yield banner
-        except requests.exceptions.ConnectionError as e:
-            raise APIError('Stream timed out')
+        for line in self._iter_stream(stream, raw):
+            yield line
 
     def banners(self, raw=False, timeout=None):
         """A real-time feed of the data that Shodan is currently collecting. Note that this is only available to
         API subscription plans and for those it only returns a fraction of the data.
         """
         stream = self._create_stream('/shodan/banners', timeout=timeout)
-        for line in stream.iter_lines():
-            if line:
-                if raw:
-                    yield line
-                else:
-                    banner = simplejson.loads(line)
-                    yield banner
+        for line in self._iter_stream(stream, raw):
+            yield line
 
     def ports(self, ports, raw=False, timeout=None):
         """
@@ -68,10 +60,5 @@ class Stream:
         :type ports: int[]
         """
         stream = self._create_stream('/shodan/ports/%s' % ','.join([str(port) for port in ports]), timeout=timeout)
-        for line in stream.iter_lines():
-            if line:
-                if raw:
-                    yield line
-                else:
-                    banner = simplejson.loads(line)
-                    yield banner
+        for line in self._iter_stream(stream, raw):
+            yield line

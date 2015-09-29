@@ -4,10 +4,7 @@ WiFi Positioning System
 Wrappers around the SkyHook and Google Locations APIs to resolve
 wireless routers' MAC addresses (BSSID) to physical locations.
 """
-try:
-    from json       import dumps, loads
-except:
-    from simplejson import dumps, loads
+from simplejson import dumps, loads
 
 try:
     from urllib2    import Request, urlopen
@@ -15,6 +12,7 @@ try:
 except:
     from urllib.request     import Request, urlopen
     from urllib.parse       import urlencode
+
 
 class Skyhook:
     

@@ -13,9 +13,9 @@ import requests
 import simplejson
 import time
 
-import shodan.exception as exception
-import shodan.helpers as helpers
-import shodan.stream as stream
+from .exception import APIError
+from .helpers import *
+from .stream import Stream
 
 
 # Try to disable the SSL warnings in urllib3 since not everybody can install
@@ -109,7 +109,7 @@ class Shodan:
         self.base_exploits_url = 'https://exploits.shodan.io'
         self.exploits = self.Exploits(self)
         self.tools = self.Tools(self)
-        self.stream = stream.Stream(key)
+        self.stream = Stream(key)
     
     def _request(self, function, params, service='shodan', method='get'):
         """General-purpose function to create web requests to SHODAN.
@@ -138,25 +138,25 @@ class Shodan:
             else:
                 data = requests.get(base_url + function, params=params)
         except:
-            raise exception.APIError('Unable to connect to Shodan')
+            raise APIError('Unable to connect to Shodan')
 
         # Check that the API key wasn't rejected
         if data.status_code == 401:
             try:
-                raise exception.APIError(data.json()['error'])
+                raise APIError(data.json()['error'])
             except:
                 pass
-            raise exception.APIError('Invalid API key')
+            raise APIError('Invalid API key')
         
         # Parse the text into JSON
         try:
             data = data.json()
         except:
-            raise exception.APIError('Unable to parse JSON response')
+            raise APIError('Unable to parse JSON response')
         
         # Raise an exception if an error occurred
         if type(data) == dict and data.get('error', None):
-            raise exception.APIError(data['error'])
+            raise APIError(data['error'])
         
         # Return the data
         return data

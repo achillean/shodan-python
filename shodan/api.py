@@ -10,14 +10,10 @@ except:
     from urllib.request     import urlopen
     from urllib.parse       import urlencode
 
-__all__ = ['WebAPI']
+from .exception import WebAPIError
 
-class WebAPIError(Exception):
-    def __init__(self, value):
-        self.value = value
-    
-    def __str__(self):
-        return self.value
+
+__all__ = ['WebAPI']
 
 
 class WebAPI:

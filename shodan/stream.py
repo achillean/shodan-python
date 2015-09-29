@@ -1,8 +1,9 @@
+import socket
+
 import requests
 import simplejson
 
-import socket
-import shodan.exception as exception
+from .exception import APIError
 
 class Stream:
 
@@ -15,17 +16,17 @@ class Stream:
         try:
             req = requests.get(self.base_url + name, params={'key': self.api_key}, stream=True, timeout=timeout)
         except Exception, e:
-            raise exception.APIError('Unable to contact the Shodan Streaming API')
+            raise APIError('Unable to contact the Shodan Streaming API')
 
         if req.status_code != 200:
             try:
                 data = simplejson.loads(req.text)
-                raise exception.APIError(data['error'])
-            except exception.APIError, e:
+                raise APIError(data['error'])
+            except APIError, e:
                 raise
             except Exception, e:
                 pass
-            raise exception.APIError('Invalid API key or you do not have access to the Streaming API')
+            raise APIError('Invalid API key or you do not have access to the Streaming API')
         return req
 
     def alert(self, aid=None, timeout=None, raw=False):
@@ -43,7 +44,7 @@ class Stream:
                         banner = simplejson.loads(line)
                         yield banner
         except requests.exceptions.ConnectionError, e:
-            raise exception.APIError('Stream timed out')
+            raise APIError('Stream timed out')
 
     def banners(self, raw=False, timeout=None):
         """A real-time feed of the data that Shodan is currently collecting. Note that this is only available to

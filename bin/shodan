@@ -105,7 +105,7 @@ def get_banner_field(banner, flat_field):
 
 def match_filters(banner, filters):
     for args in filters:
-        flat_field, check = args.split(':')
+        flat_field, check = args.split(':', 1)
         value = get_banner_field(banner, flat_field)
 
         # It must match all filters to be allowed
@@ -1009,7 +1009,7 @@ def stats(limit, facets, query):
         click.echo('Top {} Results for Facet: {}'.format(limit, facet))
 
         for item in results['facets'][facet]:
-            click.echo(click.style('{:28s}'.format(item['value'].encode('ascii', errors='replace')), fg='cyan'), nl=False)
+            click.echo(click.style('{:28s}'.format(str(item['value']).encode('ascii', errors='replace')), fg='cyan'), nl=False)
             click.echo(click.style('{:12,d}'.format(item['count']), fg='green'))
 
         click.echo('')
@@ -1048,9 +1048,9 @@ def stream(color, fields, separator, limit, datadir, ports, quiet, streamer):
 
     # Decide which stream to subscribe to based on whether or not ports were selected
     if ports:
-        stream = api.stream.ports(ports)
+        stream = api.stream.ports(ports, timeout=5)
     else:
-        stream = api.stream.banners()
+        stream = api.stream.banners(timeout=5)
 
     counter = 0
     quit = False

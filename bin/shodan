@@ -470,7 +470,7 @@ def download(limit, filename, query):
 @click.option('--format', help='The output format for the host information. Possible values are: pretty, csv, tsv. (placeholder)', default='pretty', type=str)
 @click.argument('ip', metavar='<ip address>')
 def host(format, ip):
-    """Scan an IP/ netblock using Shodan."""
+    """View all available information for an IP address"""
     key = get_api_key()
     api = shodan.Shodan(key)
 
@@ -638,6 +638,7 @@ def myip():
 
 @main.group()
 def scan():
+    """Scan an IP/ netblock using Shodan."""
     pass
 
 
@@ -983,6 +984,7 @@ def search(color, fields, limit, separator, query):
 @click.option('--facets', help='List of facets to get statistics for.', default='country,org')
 @click.argument('query', metavar='<search query>', nargs=-1)
 def stats(limit, facets, query):
+    """Provide summary information about a search query"""
     # Setup Shodan
     key = get_api_key()
     api = shodan.Shodan(key)

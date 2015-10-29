@@ -66,6 +66,11 @@ def get_api_key():
 
     raise click.ClickException('Please run "shodan init <api key>" before using this command')
 
+def get_ip(banner):
+    if 'ipv6' in banner:
+        return banner['ipv6']
+    return banner['ip_str']
+
 
 def escape_data(args):
     return args.encode('ascii', 'replace').replace('\n', '\\n').replace('\r', '\\r').replace('\t', '\\t')
@@ -683,7 +688,7 @@ def scan_internet(quiet, port, protocol):
 
                             if not quiet:
                                 click.echo('{0:<40} {1:<20} {2}'.format(
-                                        click.style(banner['ip_str'], fg=COLORIZE_FIELDS['ip_str']),
+                                        click.style(get_ip(banner), fg=COLORIZE_FIELDS['ip_str']),
                                         click.style(str(banner['port']), fg=COLORIZE_FIELDS['port']),
                                         ';'.join(banner['hostnames'])
                                     )
@@ -783,7 +788,7 @@ def scan_submit(wait, filename, netblocks):
                         # Don't show duplicate banners
                         cache_key = '{}:{}'.format(ip, banner['port'])
                         if cache_key not in cache:
-                            hosts[banner['ip_str']][banner['port']] = banner
+                            hosts[get_ip(banner)][banner['port']] = banner
                             cache[cache_key] = True
 
                         # If we've grabbed data for more than 60 seconds it might just be a busy network and we should move on
@@ -817,6 +822,8 @@ def scan_submit(wait, filename, netblocks):
 
                     done = True
                 except Exception, e:
+                    finished_event.set()
+                    progress_bar_thread.join()
                     raise click.ClickException(repr(e))
 
             finished_event.set()

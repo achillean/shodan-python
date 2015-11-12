@@ -14,16 +14,16 @@ class Stream:
     def _create_stream(self, name, timeout=None):
         try:
             req = requests.get(self.base_url + name, params={'key': self.api_key}, stream=True, timeout=timeout)
-        except Exception, e:
+        except:
             raise exception.APIError('Unable to contact the Shodan Streaming API')
 
         if req.status_code != 200:
             try:
                 data = simplejson.loads(req.text)
                 raise exception.APIError(data['error'])
-            except exception.APIError, e:
+            except exception.APIError:
                 raise
-            except Exception, e:
+            except:
                 pass
             raise exception.APIError('Invalid API key or you do not have access to the Streaming API')
         return req
@@ -42,7 +42,7 @@ class Stream:
                     else:
                         banner = simplejson.loads(line)
                         yield banner
-        except requests.exceptions.ConnectionError, e:
+        except requests.exceptions.ConnectionError:
             raise exception.APIError('Stream timed out')
 
     def banners(self, raw=False, timeout=None):

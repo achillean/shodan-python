@@ -1035,7 +1035,8 @@ def stats(limit, facets, query):
 @click.option('--quiet', help='Disable the printing of information to the screen.', is_flag=True)
 @click.option('--timeout', help='Timeout. Should the shodan stream cease to send data, then timeout after <timeout> seconds.', default=5, type=int)
 @click.option('--streamer', help='Specify a custom Shodan stream server to use for grabbing data.', default='https://stream.shodan.io', type=str)
-def stream(color, fields, separator, limit, datadir, ports, quiet, timeout, streamer):
+@click.option('--pipe',  help='Specify the path of the named pipe to which shodan should send the JSON data to in addition to writing to the data directory.', default=None, type=str)
+def stream(color, fields, separator, limit, datadir, ports, quiet, timeout, streamer, pipe):
     """Stream data in real-time."""
     # Setup the Shodan API
     key = get_api_key()
@@ -1046,6 +1047,12 @@ def stream(color, fields, separator, limit, datadir, ports, quiet, timeout, stre
 
     # Strip out any whitespace in the fields and turn them into an array
     fields = [item.strip() for item in fields.split(',')]
+
+    # create named pipe if given on the command line
+    if (pipe and not os.path.exists(pipe)):
+        os.mkfifo(pipe) 
+    if (pipe):
+        pipeout = os.open(pipe, os.O_WRONLY)
 
     if len(fields) == 0:
         raise click.ClickException('Please define at least one property to show')
@@ -1070,6 +1077,13 @@ def stream(color, fields, separator, limit, datadir, ports, quiet, timeout, stre
 
     if datadir:
         fout = open_file(datadir, last_time)
+        fout.write('[\n')
+    if pipe:
+        try:
+            os.write(pipeout, '[\n')
+        except IOError, e:
+            if e.errno == errno.EPIPE:
+                 pipeout = os.open(pipe, os.O_WRONLY) # simply re-open the pipe 
 
     while not quit:
         try:
@@ -1087,9 +1101,18 @@ def stream(color, fields, separator, limit, datadir, ports, quiet, timeout, stre
                     cur_time = timestr()
                     if cur_time != last_time:
                             last_time = cur_time
+                            fout.write('{ "_file_closed_at": "%s" } ]' %cur_time )
                             fout.close()
                             fout = open_file(datadir, last_time)
-                    fout.write(simplejson.dumps(banner) + '\n')
+                            fout.write('[\n')
+                    fout.write(simplejson.dumps(banner) + ',\n')
+                    if pipe:
+                        try:
+                            os.write(pipeout, simplejson.dumps(banner) + ',\n')
+                        except IOError, e:
+                            if e.errno == errno.EPIPE:
+                                 pipeout = os.open(pipe, os.O_WRONLY) # simply re-open the pipe 
+
 
                 # Print the banner information to stdout
                 if not quiet:
@@ -1126,7 +1149,17 @@ def stream(color, fields, separator, limit, datadir, ports, quiet, timeout, stre
         except:
             # For other errors lets just wait a few seconds and try to reconnect again
             # XXX FIXME: this does not seem to reconnect since it's in the while not quit loop!
-            time.sleep(2)
+            quit = True
+            #time.sleep(2)
+    if pipe:
+        try:
+            os.write(pipeout, '{ "_file_closed_at": "%s" } ]' %cur_time )
+        except IOError, e:
+            if e.errno == errno.EPIPE:
+                 pipeout = os.open(pipe, os.O_WRONLY) # simply re-open the pipe 
+            else:
+                print ("got an IOError: %s" %e)
+        #os.close(pipeout)
 
 
 def async_spinner(finished):

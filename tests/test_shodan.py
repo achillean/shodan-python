@@ -1,6 +1,12 @@
 import unittest
 import shodan
 
+try:
+    basestring
+except NameError:
+    basestring = str
+
+
 class ShodanTests(unittest.TestCase):
 
 	api = None
@@ -115,7 +121,7 @@ class ShodanTests(unittest.TestCase):
 		raised = False
 		try:
 			api.search('something')
-		except shodan.APIError, e:
+		except shodan.APIError as e:
 			raised = True
 
 		self.assertTrue(raised)
@@ -124,7 +130,7 @@ class ShodanTests(unittest.TestCase):
 		raised = False
 		try:
 			host = self.api.host('test')
-		except shodan.APIError, e:
+		except shodan.APIError as e:
 			raised = True
 
 		self.assertTrue(raised)
@@ -133,7 +139,7 @@ class ShodanTests(unittest.TestCase):
 		raised = False
 		try:
 			self.api.search('')
-		except shodan.APIError, e:
+		except shodan.APIError as e:
 			raised = True
 		self.assertTrue(raised)
 
@@ -142,6 +148,10 @@ class ShodanTests(unittest.TestCase):
 		raised = False
 		try:
 			self.api.search(self.QUERIES['advanced'])
-		except shodan.APIError, e:
+		except shodan.APIError as e:
 			raised = True
 		self.assertTrue(raised)
+
+
+if __name__ == '__main__':
+    unittest.main()

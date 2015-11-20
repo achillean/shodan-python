@@ -1,6 +1,8 @@
 import requests
 import simplejson
-from .client import APIError
+
+from .exception import APIError
+
 
 class Threatnet:
     """Wrapper around the Threatnet REST and Streaming APIs

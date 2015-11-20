@@ -1,7 +1,13 @@
-
 import requests
-import shodan.exception
 import simplejson
+
+from .exception import APIError
+
+try:
+    basestring
+except NameError:
+    basestring = str
+
 
 def create_facet_string(facets):
     """Converts a Python list of facets into a comma-separated string that can be understood by
@@ -50,25 +56,25 @@ def api_request(key, function, params=None, data=None, base_url='https://api.sho
             tries += 1
 
     if error and tries >= retries:
-        raise shodan.exception.APIError('Unable to connect to Shodan')
+        raise APIError('Unable to connect to Shodan')
 
     # Check that the API key wasn't rejected
     if data.status_code == 401:
         try:
-            raise shodan.exception.APIError(data.json()['error'])
+            raise APIError(data.json()['error'])
         except:
             pass
-        raise shodan.exception.APIError('Invalid API key')
+        raise APIError('Invalid API key')
     
     # Parse the text into JSON
     try:
         data = data.json()
     except:
-        raise shodan.exception.APIError('Unable to parse JSON response')
+        raise APIError('Unable to parse JSON response')
     
     # Raise an exception if an error occurred
     if type(data) == dict and data.get('error', None):
-        raise shodan.exception.APIError(data['error'])
+        raise APIError(data['error'])
     
     # Return the data
     return data

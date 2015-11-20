@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 """
 shodan.client
 ~~~~~~~~~~~~~
@@ -8,14 +7,14 @@ This module implements the Shodan API.
 
 :copyright: (c) 2014-2015 by John Matherly
 """
+import time
 
 import requests
 import simplejson
-import time
 
-import shodan.exception as exception
-import shodan.helpers as helpers
-import shodan.stream as stream
+from .exception import APIError
+from .helpers import api_request, create_facet_string
+from .stream import Stream
 
 
 # Try to disable the SSL warnings in urllib3 since not everybody can install
@@ -73,8 +72,7 @@ class Shodan:
                 'page': page,
             }
             if facets:
-                facet_str = helpers.create_facet_string(facets)
-                query_args['facets'] = facet_str
+                query_args['facets'] = create_facet_string(facets)
 
             return self.parent._request('/api/search', query_args, service='exploits')
             
@@ -93,8 +91,7 @@ class Shodan:
                 'query': query,
             }
             if facets:
-                facet_str = helpers.create_facet_string(facets)
-                query_args['facets'] = facet_str
+                query_args['facets'] = create_facet_string(facets)
 
             return self.parent._request('/api/count', query_args, service='exploits')
     
@@ -109,7 +106,7 @@ class Shodan:
         self.base_exploits_url = 'https://exploits.shodan.io'
         self.exploits = self.Exploits(self)
         self.tools = self.Tools(self)
-        self.stream = stream.Stream(key)
+        self.stream = Stream(key)
     
     def _request(self, function, params, service='shodan', method='get'):
         """General-purpose function to create web requests to SHODAN.
@@ -138,25 +135,25 @@ class Shodan:
             else:
                 data = requests.get(base_url + function, params=params)
         except:
-            raise exception.APIError('Unable to connect to Shodan')
+            raise APIError('Unable to connect to Shodan')
 
         # Check that the API key wasn't rejected
         if data.status_code == 401:
             try:
-                raise exception.APIError(data.json()['error'])
+                raise APIError(data.json()['error'])
             except:
                 pass
-            raise exception.APIError('Invalid API key')
+            raise APIError('Invalid API key')
         
         # Parse the text into JSON
         try:
             data = data.json()
         except:
-            raise exception.APIError('Unable to parse JSON response')
+            raise APIError('Unable to parse JSON response')
         
         # Raise an exception if an error occurred
         if type(data) == dict and data.get('error', None):
-            raise exception.APIError(data['error'])
+            raise APIError(data['error'])
         
         # Return the data
         return data
@@ -175,8 +172,7 @@ class Shodan:
             'query': query,
         }
         if facets:
-            facet_str = helpers.create_facet_string(facets)
-            query_args['facets'] = facet_str
+            query_args['facets'] = create_facet_string(facets)
         return self._request('/shodan/host/count', query_args)
     
     def host(self, ip, history=False):
@@ -286,8 +282,7 @@ class Shodan:
             args['page'] = page
 
         if facets:
-            facet_str = helpers.create_facet_string(facets)
-            args['facets'] = facet_str
+            args['facets'] = create_facet_string(facets)
         
         return self._request('/shodan/host/search', args)
     
@@ -417,7 +412,7 @@ class Shodan:
             'expires': expires,
         }
 
-        response = helpers.api_request(self.api_key, '/shodan/alert', data=data, params={}, method='post')
+        response = api_request(self.api_key, '/shodan/alert', data=data, params={}, method='post')
 
         return response
 
@@ -428,7 +423,7 @@ class Shodan:
         else:
             func = '/shodan/alert/info'
 
-        response = helpers.api_request(self.api_key, func, params={
+        response = api_request(self.api_key, func, params={
             'include_expired': include_expired,
             })
 
@@ -438,7 +433,7 @@ class Shodan:
         """Delete the alert with the given ID."""
         func = '/shodan/alert/%s' % aid
 
-        response = helpers.api_request(self.api_key, func, params={}, method='delete')
+        response = api_request(self.api_key, func, params={}, method='delete')
 
         return response
 

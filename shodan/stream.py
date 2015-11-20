@@ -19,7 +19,7 @@ class Stream:
 
         if req.status_code != 200:
             try:
-                data = req.json()
+                data = simplejson.loads(req.text)
                 raise APIError(data['error'])
             except APIError as e:
                 raise

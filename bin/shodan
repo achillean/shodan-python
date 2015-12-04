@@ -462,7 +462,7 @@ def download(limit, filename, query):
         limit = total
 
     # A limit of -1 means that we should download all the data
-    if limit == -1:
+    if limit <= 0:
         limit = total
 
     with gzip.open(filename, 'w') as fout:

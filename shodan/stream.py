@@ -41,8 +41,12 @@ class Stream:
             stream = self._create_stream('/shodan/alert/%s' % aid, timeout=timeout)
         else:
             stream = self._create_stream('/shodan/alert', timeout=timeout)
-        for line in self._iter_stream(stream, raw):
-            yield line
+
+        try:
+            for line in self._iter_stream(stream, raw):
+                yield line
+        except requests.exceptions.ConnectionError as e:
+            raise APIError('Stream timed out')
 
     def banners(self, raw=False, timeout=None):
         """A real-time feed of the data that Shodan is currently collecting. Note that this is only available to

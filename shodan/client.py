@@ -28,6 +28,12 @@ try:
 except:
     pass
 
+# Define a basestring type if necessary for Python3 compatibility
+try:
+    basestring
+except NameError:
+    basestring = str
+
 
 class Shodan:
     """Wrapper around the Shodan REST and Streaming APIs

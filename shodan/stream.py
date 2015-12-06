@@ -1,5 +1,6 @@
 import requests
 import simplejson
+import ssl
 
 from .exception import APIError
 
@@ -46,6 +47,8 @@ class Stream:
             for line in self._iter_stream(stream, raw):
                 yield line
         except requests.exceptions.ConnectionError as e:
+            raise APIError('Stream timed out')
+        except ssl.SSLError as e:
             raise APIError('Stream timed out')
 
     def banners(self, raw=False, timeout=None):

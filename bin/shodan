@@ -836,7 +836,6 @@ def scan_submit(wait, filename, netblocks):
 
                     done = True
                 except Exception as e:
-                    raise
                     finished_event.set()
                     progress_bar_thread.join()
                     raise click.ClickException(repr(e))

@@ -217,16 +217,30 @@ class Shodan:
     def scan(self, ips):
         """Scan a network using Shodan
 
-        :param ips: A list of IPs or netblocks in CIDR notation
-        :type ips: str
+        :param ips: A list of IPs or netblocks in CIDR notation or an object structured like:
+                    {
+                        "9.9.9.9": [
+                            (443, "https"),
+                            (8080, "http")
+                        ],
+                        "1.1.1.0/24": [
+                            (503, "modbus")
+                        ]
+                    }
+        :type ips: str or dict
 
         :returns: A dictionary with a unique ID to check on the scan progress, the number of IPs that will be crawled and how many scan credits are left.
         """
         if isinstance(ips, basestring):
             ips = [ips]
+        
+        if isinstance(ips, dict):
+            networks = simplejson.dumps(ips)
+        else:
+            networks = ','.join(ips)
 
         params = {
-            'ips': ','.join(ips),
+            'ips': networks,
         }
 
         return self._request('/shodan/scan', params, method='post')

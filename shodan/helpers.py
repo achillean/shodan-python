@@ -1,3 +1,4 @@
+import gzip
 import requests
 import simplejson
 
@@ -78,3 +79,21 @@ def api_request(key, function, params=None, data=None, base_url='https://api.sho
     
     # Return the data
     return data
+
+
+def iterate_files(files):
+    """Loop over all the records of the provided Shodan output file(s)."""
+    if isinstance(files, basestring):
+        files = [files]
+    
+    for filename in files:
+        # Create a file handle depending on the filetype
+        if filename.endswith('.gz'):
+            fin = gzip.open(filename, 'r')
+        else:
+            fin = open(filename, 'r')
+
+        for line in fin:
+            # Convert the JSON into a native Python object
+            banner = simplejson.loads(line)
+            yield banner

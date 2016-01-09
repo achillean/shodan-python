@@ -181,7 +181,7 @@ class Shodan:
             query_args['facets'] = create_facet_string(facets)
         return self._request('/shodan/host/count', query_args)
     
-    def host(self, ip, history=False):
+    def host(self, ips, history=False):
         """Get all available information on an IP.
 
         :param ip: IP of the computer

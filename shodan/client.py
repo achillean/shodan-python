@@ -189,10 +189,13 @@ class Shodan:
         :param history: (optional) True if you want to grab the historical (non-current) banners for the host, False otherwise.
         :type history: bool
         """
+        if isinstance(ips, basestring):
+            ips = [ips]
+        
         params = {}
         if history:
             params['history'] = history
-        return self._request('/shodan/host/%s' % ip, params)
+        return self._request('/shodan/host/%s' % ','.join(ips), params)
     
     def info(self):
         """Returns information about the current API key, such as a list of add-ons

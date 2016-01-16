@@ -13,6 +13,10 @@ class Stream:
         self.api_key = api_key
 
     def _create_stream(self, name, timeout=None):
+        # The user doesn't want to use a timeout
+        if timeout <= 0:
+            timeout = None
+        
         try:
             req = requests.get(self.base_url + name, params={'key': self.api_key}, stream=True, timeout=timeout)
         except Exception as e:

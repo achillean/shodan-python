@@ -1046,7 +1046,7 @@ def stats(limit, facets, query):
 @click.option('--datadir', help='Save the stream data into the specified directory as .json.gz files.', default=None, type=str)
 @click.option('--ports', help='A comma-separated list of ports to grab data on.', default=None, type=str)
 @click.option('--quiet', help='Disable the printing of information to the screen.', is_flag=True)
-@click.option('--timeout', help='Timeout. Should the shodan stream cease to send data, then timeout after <timeout> seconds.', default=5, type=int)
+@click.option('--timeout', help='Timeout. Should the shodan stream cease to send data, then timeout after <timeout> seconds.', default=0, type=int)
 @click.option('--streamer', help='Specify a custom Shodan stream server to use for grabbing data.', default='https://stream.shodan.io', type=str)
 def stream(color, fields, separator, limit, datadir, ports, quiet, timeout, streamer):
     """Stream data in real-time."""
@@ -1137,9 +1137,14 @@ def stream(color, fields, separator, limit, datadir, ports, quiet, timeout, stre
         except KeyboardInterrupt:
             quit = True
         except:
-            # For other errors lets just wait a few seconds and try to reconnect again
+            # For other errors lets just wait a bit and try to reconnect again
             # XXX FIXME: this does not seem to reconnect since it's in the while not quit loop!
-            time.sleep(2)
+            # Decide which stream to subscribe to based on whether or not ports were selected
+            if ports:
+                stream = api.stream.ports(ports, timeout=timeout)
+            else:
+                stream = api.stream.banners(timeout=timeout)
+            time.sleep(1)
 
 
 def async_spinner(finished):

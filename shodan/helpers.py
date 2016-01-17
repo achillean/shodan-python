@@ -97,3 +97,8 @@ def iterate_files(files):
             # Convert the JSON into a native Python object
             banner = simplejson.loads(line)
             yield banner
+
+def get_screenshot(banner):
+    if 'opts' in banner and 'screenshot' in banner['opts']:
+        return banner['opts']['screenshot']
+    return None

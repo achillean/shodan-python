@@ -27,6 +27,7 @@ import itertools
 import os
 import os.path
 import shodan
+import shodan.helpers as helpers
 import simplejson
 import socket
 import sys
@@ -90,19 +91,6 @@ def timestr():
 
 def open_file(directory, timestr):
         return gzip.open('%s/%s.json.gz' % (directory, timestr), 'a', 1)
-
-def iterate_files(files):
-    for filename in files:
-        # Create a file handle depending on the filetype
-        if filename.endswith('.gz'):
-            fin = gzip.open(filename, 'r')
-        else:
-            fin = open(filename, 'r')
-
-        for line in fin:
-            # Convert the JSON into a native Python object
-            banner = simplejson.loads(line)
-            yield banner
 
 def get_banner_field(banner, flat_field):
     # The provided field is a collapsed form of the actual field
@@ -276,7 +264,7 @@ def convert(input, format):
     fout.write(KML_HEADER)
 
     hosts = {}
-    for banner in iterate_files([input]):
+    for banner in helpers.iterate_files([input]):
         ip = banner.get('ip_str', banner.get('ipv6', None))
         if not ip:
             continue
@@ -606,7 +594,7 @@ def parse(color, fields, filters, filename, separator, filenames):
             filename += '.json.gz'
         fout = gzip.open(filename, 'a')
 
-    for banner in iterate_files(filenames):
+    for banner in helpers.iterate_files(filenames):
         row = ''
 
         # Validate the banner against any provided filters

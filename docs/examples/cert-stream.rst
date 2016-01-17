@@ -20,7 +20,7 @@ information.
 	#
 	# WARNING: This script only works with people that have a subscription API plan!
 	# And by default the Streaming API only returns 1% of the data that Shodan gathers.
-	# If you wish to have more access please contact us at support@shodan.io for pricing
+	# If you wish to have more access please contact us at sales@shodan.io for pricing
 	# information.
 	#
 	# Author: achillean
@@ -37,10 +37,11 @@ information.
 
 	    print 'Listening for certs...'
 	    for banner in api.stream.ports([443, 8443]):
-	        if 'opts' in banner and 'pem' in banner['opts']:
-	            print banner['opts']['pem']
+			if 'ssl' in banner:
+				# Print out all the SSL information that Shodan has collected
+				print banner['ssl']
 	    
-	except Exception, e:
+	except Exception as e:
 	    print 'Error: %s' % e
 	    sys.exit(1)
 

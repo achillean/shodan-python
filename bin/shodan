@@ -1036,7 +1036,9 @@ def stats(limit, facets, query):
 @click.option('--quiet', help='Disable the printing of information to the screen.', is_flag=True)
 @click.option('--timeout', help='Timeout. Should the shodan stream cease to send data, then timeout after <timeout> seconds.', default=0, type=int)
 @click.option('--streamer', help='Specify a custom Shodan stream server to use for grabbing data.', default='https://stream.shodan.io', type=str)
-def stream(color, fields, separator, limit, datadir, ports, quiet, timeout, streamer):
+@click.option('--countries', help='A comma-separated list of countries to grab data on.', default=None, type=str)
+@click.option('--asn', help='A comma-separated list of ASNs to grab data on.', default=None, type=str)
+def stream(color, fields, separator, limit, datadir, ports, quiet, timeout, streamer, countries,  asn):
     """Stream data in real-time."""
     # Setup the Shodan API
     key = get_api_key()
@@ -1050,19 +1052,56 @@ def stream(color, fields, separator, limit, datadir, ports, quiet, timeout, stre
 
     if len(fields) == 0:
         raise click.ClickException('Please define at least one property to show')
+    
+    # The user must choose "ports", "countries", "asn" or nothing - can't select multiple
+    # filtered streams at once.
+    stream_type = []
+    if ports:
+        stream_type.append('ports')
+    if countries:
+        stream_type.append('countries')
+    if asn:
+        stream_type.append('asn')
+    
+    if len(stream_type) > 1:
+        raise click.ClickException('Please use --ports, --countries OR --asn. You cant subscribe to multiple filtered streams at once.')
 
+    stream_args = None
+    
     # Turn the list of ports into integers
     if ports:
         try:
-            ports = [int(item.strip()) for item in ports.split(',')]
+            stream_args = [int(item.strip()) for item in ports.split(',')]
         except:
             raise click.ClickException('Invalid list of ports')
+    
+    if asn:
+        stream_args = asn.split(',')
+    
+    if countries:
+        stream_args = countries.split(',')
+    
+    # Flatten the list of stream types
+    # Possible values are:
+    # - all
+    # - asn
+    # - countries
+    # - ports
+    if len(stream_type) == 1:
+        stream_type = stream_type[0]
+    else:
+        stream_type = 'all'
 
     # Decide which stream to subscribe to based on whether or not ports were selected
-    if ports:
-        stream = api.stream.ports(ports, timeout=timeout)
-    else:
-        stream = api.stream.banners(timeout=timeout)
+    def _create_stream(name, args, timeout):
+        return {
+            'all': api.stream.banners(timeout=timeout),
+            'asn': api.stream.asn(args, timeout=timeout),
+            'countries': api.stream.countries(args, timeout=timeout),
+            'ports': api.stream.ports(args, timeout=timeout),
+        }.get(name, 'all')
+    
+    stream = _create_stream(stream_type, stream_args, timeout=timeout)
 
     counter = 0
     quit = False
@@ -1127,12 +1166,10 @@ def stream(color, fields, separator, limit, datadir, ports, quiet, timeout, stre
         except:
             # For other errors lets just wait a bit and try to reconnect again
             # XXX FIXME: this does not seem to reconnect since it's in the while not quit loop!
-            # Decide which stream to subscribe to based on whether or not ports were selected
-            if ports:
-                stream = api.stream.ports(ports, timeout=timeout)
-            else:
-                stream = api.stream.banners(timeout=timeout)
             time.sleep(1)
+            
+            # Create a new stream object to subscribe to
+            stream = _create_stream(stream_type, stream_args, timeout=timeout)
 
 
 def async_spinner(finished):

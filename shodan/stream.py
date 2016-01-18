@@ -55,11 +55,33 @@ class Stream:
         except ssl.SSLError as e:
             raise APIError('Stream timed out')
 
+    def asn(self, asn, raw=False, timeout=None):
+        """
+        A filtered version of the "banners" stream to only return banners that match the ASNs of interest.
+
+        :param asn: A list of ASN to return banner data on.
+        :type asn: string[]
+        """
+        stream = self._create_stream('/shodan/asn/%s' % ','.join(asn), timeout=timeout)
+        for line in self._iter_stream(stream, raw):
+            yield line
+
     def banners(self, raw=False, timeout=None):
         """A real-time feed of the data that Shodan is currently collecting. Note that this is only available to
         API subscription plans and for those it only returns a fraction of the data.
         """
         stream = self._create_stream('/shodan/banners', timeout=timeout)
+        for line in self._iter_stream(stream, raw):
+            yield line
+
+    def countries(self, countries, raw=False, timeout=None):
+        """
+        A filtered version of the "banners" stream to only return banners that match the countries of interest.
+
+        :param countries: A list of countries to return banner data on.
+        :type countries: string[]
+        """
+        stream = self._create_stream('/shodan/countries/%s' % ','.join(countries), timeout=timeout)
         for line in self._iter_stream(stream, raw):
             yield line
 
@@ -73,3 +95,4 @@ class Stream:
         stream = self._create_stream('/shodan/ports/%s' % ','.join([str(port) for port in ports]), timeout=timeout)
         for line in self._iter_stream(stream, raw):
             yield line
+            

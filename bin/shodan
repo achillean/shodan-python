@@ -456,7 +456,7 @@ def download(limit, filename, query):
     with gzip.open(filename, 'w') as fout:
         count = 0
         try:
-            cursor = api.search_cursor(query)
+            cursor = api.search_cursor(query, minify=False)
             with click.progressbar(cursor, length=limit) as bar:
                 for banner in bar:
                     write_banner(fout, banner)

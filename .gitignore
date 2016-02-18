@@ -6,5 +6,4 @@ build/*
 *.pyc
 shodan.egg-info/*
 tmp/*
-shodan/cli/*
 MANIFEST

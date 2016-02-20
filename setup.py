@@ -4,12 +4,12 @@ from setuptools import setup
 
 setup(
     name = 'shodan',
-    version = '1.4.6',
+    version = '1.4.8',
     description = 'Python library and command-line utility for Shodan (https://developer.shodan.io)',
     author = 'John Matherly',
     author_email = 'jmath@shodan.io',
     url = 'http://github.com/achillean/shodan-python/tree/master',
-    packages = ['shodan'],
+    packages = ['shodan', 'shodan.cli', 'shodan.cli.converter'],
     scripts = ['bin/shodan'],
     install_requires=["simplejson", "requests>=2.2.1", "click", "colorama"],
     classifiers = [

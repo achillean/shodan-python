@@ -1065,6 +1065,27 @@ def stream(color, fields, separator, limit, datadir, ports, quiet, timeout, stre
             stream = _create_stream(stream_type, stream_args, timeout=timeout)
 
 
+@main.command()
+@click.argument('ip', metavar='<IP address>')
+def honeyscore(ip):
+    """Check whether the IP is a honeypot or not."""
+    key = get_api_key()
+    api = shodan.Shodan(key)
+
+    try:
+        score = api.labs.honeyscore(ip)
+        
+        if score == 1.0:
+            click.echo(click.style('Honeypot detected', fg='red'))
+        elif score > 0.5:
+            click.echo(click.style('Probably a honeypot', fg='yellow'))
+        else:
+            click.echo(click.style('Not a honeypot', fg='green'))
+        
+        click.echo('Score: {}'.format(score))
+    except:
+        click.ClickException('Unable to calculate honeyscore')
+
 def async_spinner(finished):
     spinner = itertools.cycle(['-', '/', '|', '\\'])
     while not finished.is_set():

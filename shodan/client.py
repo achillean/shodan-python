@@ -101,6 +101,21 @@ class Shodan:
 
             return self.parent._request('/api/count', query_args, service='exploits')
     
+    class Labs:
+
+        def __init__(self, parent):
+            self.parent = parent
+
+        def honeyscore(self, ip):
+            """Calculate the probability of an IP being an ICS honeypot.
+            
+            :param ip: IP address of the device
+            :type ip: str
+
+            :returns: int -- honeyscore ranging from 0.0 to 1.0
+            """
+            return self.parent._request('/labs/honeyscore/{}'.format(ip), {})
+    
     def __init__(self, key):
         """Initializes the API object.
         
@@ -111,6 +126,7 @@ class Shodan:
         self.base_url = 'https://api.shodan.io'
         self.base_exploits_url = 'https://exploits.shodan.io'
         self.exploits = self.Exploits(self)
+        self.labs = self.Labs(self)
         self.tools = self.Tools(self)
         self.stream = Stream(key)
     

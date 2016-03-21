@@ -160,12 +160,14 @@ class Shodan:
             raise APIError('Unable to connect to Shodan')
 
         # Check that the API key wasn't rejected
-        if data.status_code == 401:
+        if data.status_code >= 401 and data.status_code < 500:
             try:
-                raise APIError(data.json()['error'])
-            except:
-                pass
-            raise APIError('Invalid API key')
+                # Return the actual error message if the API returned valid JSON
+                error = data.json()['error']
+            except Exception as e:
+                error = 'Invalid API key'
+            
+            raise APIError(error)
         
         # Parse the text into JSON
         try:
@@ -174,7 +176,7 @@ class Shodan:
             raise APIError('Unable to parse JSON response')
         
         # Raise an exception if an error occurred
-        if type(data) == dict and data.get('error', None):
+        if type(data) == dict and 'error' in data:
             raise APIError(data['error'])
         
         # Return the data

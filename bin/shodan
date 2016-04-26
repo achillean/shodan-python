@@ -655,9 +655,10 @@ def scan_protocols():
 @scan.command(name='submit')
 @click.option('--wait', help='How long to wait for results to come back. If this is set to "0" or below return immediately.', default=20, type=int)
 @click.option('--filename', help='Save the results in the given file.', default='', type=str)
+@click.option('--force', default=False, is_flag=True)
 @click.option('--verbose', default=False, is_flag=True)
 @click.argument('netblocks', metavar='<ip address>', nargs=-1)
-def scan_submit(wait, filename, verbose, netblocks):
+def scan_submit(wait, filename, force, verbose, netblocks):
     """Scan an IP/ netblock using Shodan."""
     key = get_api_key()
     api = shodan.Shodan(key)
@@ -666,7 +667,7 @@ def scan_submit(wait, filename, verbose, netblocks):
     # Submit the IPs for scanning
     try:
         # Submit the scan
-        scan = api.scan(netblocks)
+        scan = api.scan(netblocks, force=force)
 
         now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
 

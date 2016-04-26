@@ -235,7 +235,7 @@ class Shodan:
         """
         return self._request('/shodan/protocols', {})
 
-    def scan(self, ips):
+    def scan(self, ips, force=False):
         """Scan a network using Shodan
 
         :param ips: A list of IPs or netblocks in CIDR notation or an object structured like:
@@ -249,6 +249,8 @@ class Shodan:
                         ]
                     }
         :type ips: str or dict
+        :param force: Whether or not to force Shodan to re-scan the provided IPs. Only available to enterprise users.
+        :type force: bool
 
         :returns: A dictionary with a unique ID to check on the scan progress, the number of IPs that will be crawled and how many scan credits are left.
         """
@@ -262,6 +264,7 @@ class Shodan:
 
         params = {
             'ips': networks,
+            'force': force,
         }
 
         return self._request('/shodan/scan', params, method='post')

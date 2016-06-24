@@ -21,6 +21,7 @@ The following commands are currently supported:
 
 import click
 import collections
+import csv
 import datetime
 import gzip
 import itertools
@@ -934,8 +935,9 @@ def search(color, fields, limit, separator, query):
 @main.command()
 @click.option('--limit', help='The number of results to return.', default=10, type=int)
 @click.option('--facets', help='List of facets to get statistics for.', default='country,org')
+@click.option('--filename', '-O', help='Save the results in a CSV file of the provided name.', default=None)
 @click.argument('query', metavar='<search query>', nargs=-1)
-def stats(limit, facets, query):
+def stats(limit, facets, filename, query):
     """Provide summary information about a search query"""
     # Setup Shodan
     key = get_api_key()
@@ -960,13 +962,60 @@ def stats(limit, facets, query):
 
     # Print the stats tables
     for facet in results['facets']:
-        click.echo('Top {} Results for Facet: {}'.format(limit, facet))
+        click.echo('Top {} Results for Facet: {}'.format(len(results['facets'][facet]), facet))
 
         for item in results['facets'][facet]:
             click.echo(click.style('{:28s}'.format(str(item['value']).encode('ascii', errors='replace')), fg='cyan'), nl=False)
             click.echo(click.style('{:12,d}'.format(item['count']), fg='green'))
 
         click.echo('')
+        
+    # Create the output file if requested
+    fout = None
+    if filename:
+        if not filename.endswith('.csv'):
+            filename += '.csv'
+        fout = open(filename, 'w')
+        writer = csv.writer(fout, dialect=csv.excel)
+        
+        # Write the header
+        writer.writerow(['Query', query])
+        
+        # Add an empty line to separate rows
+        writer.writerow([])
+        
+        # Write the header that contains the facets
+        row = []
+        for facet in results['facets']:
+            row.append(facet)
+            row.append('')
+        writer.writerow(row)
+        
+        # Every facet has 2 columns (key, value)
+        counter = 0
+        has_items = True
+        while has_items:
+            row = ['' for i in range(len(results['facets']) * 2)]
+            
+            pos = 0
+            has_items = False
+            for facet in results['facets']:
+                values = results['facets'][facet]
+                
+                # Add the values for the facet into the current row
+                if len(values) > counter:
+                    has_items = True
+                    row[pos] = values[counter]['value']
+                    row[pos+1] = values[counter]['count']
+                
+                pos += 2
+            
+            # Write out the row
+            if has_items:
+                writer.writerow(row)
+            
+            # Move to the next row of values
+            counter += 1
 
 
 @main.command()

@@ -4,7 +4,7 @@ from setuptools import setup
 
 setup(
     name = 'shodan',
-    version = '1.5.3',
+    version = '1.5.4',
     description = 'Python library and command-line utility for Shodan (https://developer.shodan.io)',
     author = 'John Matherly',
     author_email = 'jmath@shodan.io',

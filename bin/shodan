@@ -114,6 +114,10 @@ def match_filters(banner, filters):
     for args in filters:
         flat_field, check = args.split(':', 1)
         value = get_banner_field(banner, flat_field)
+        
+        # If the field doesn't exist on the banner then ignore the record
+        if not value:
+            return False
 
         # It must match all filters to be allowed
         field_type = type(value)

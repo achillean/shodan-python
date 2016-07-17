@@ -129,7 +129,8 @@ class Shodan:
         self.labs = self.Labs(self)
         self.tools = self.Tools(self)
         self.stream = Stream(key)
-    
+        self._session = requests.Session()
+            
     def _request(self, function, params, service='shodan', method='get'):
         """General-purpose function to create web requests to SHODAN.
         
@@ -153,9 +154,9 @@ class Shodan:
         # Send the request
         try:
             if method.lower() == 'post':
-                data = requests.post(base_url + function, params)
+                data = self._session.post(base_url + function, params)
             else:
-                data = requests.get(base_url + function, params=params)
+                data = self._session.get(base_url + function, params=params)
         except:
             raise APIError('Unable to connect to Shodan')
 

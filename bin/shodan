@@ -607,7 +607,7 @@ def scan_internet(quiet, port, protocol):
                 click.echo('Waiting for data, please stand by...')
                 while not done:
                     try:
-                        for banner in api.stream.ports([port], timeout=30):
+                        for banner in api.stream.ports([port], timeout=90):
                             counter += 1
                             write_banner(fout, banner)
 

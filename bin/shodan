@@ -93,8 +93,8 @@ def escape_data(args):
 def timestr():
         return datetime.datetime.utcnow().strftime('%Y-%m-%d')
 
-def open_file(directory, timestr):
-        return gzip.open('%s/%s.json.gz' % (directory, timestr), 'a', 1)
+def open_file(directory, timestr, compresslevel=9):
+        return gzip.open('%s/%s.json.gz' % (directory, timestr), 'a', compresslevel)
 
 def get_banner_field(banner, flat_field):
     # The provided field is a collapsed form of the actual field
@@ -1035,7 +1035,8 @@ def stats(limit, facets, filename, query):
 @click.option('--countries', help='A comma-separated list of countries to grab data on.', default=None, type=str)
 @click.option('--asn', help='A comma-separated list of ASNs to grab data on.', default=None, type=str)
 @click.option('--alert', help='The network alert ID or "all" to subscribe to all network alerts on your account.', default=None, type=str)
-def stream(color, fields, separator, limit, datadir, ports, quiet, timeout, streamer, countries,  asn, alert):
+@click.option('--compresslevel', help='The gzip compression level (0-9; 0 = no compression, 9 = most compression', default=9, type=int)
+def stream(color, fields, separator, limit, datadir, ports, quiet, timeout, streamer, countries,  asn, alert, compresslevel):
     """Stream data in real-time."""
     # Setup the Shodan API
     key = get_api_key()
@@ -1114,7 +1115,7 @@ def stream(color, fields, separator, limit, datadir, ports, quiet, timeout, stre
     fout = None
 
     if datadir:
-        fout = open_file(datadir, last_time)
+        fout = open_file(datadir, last_time, compresslevel)
 
     while not quit:
         try:

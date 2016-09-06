@@ -969,7 +969,13 @@ def stats(limit, facets, filename, query):
         click.echo('Top {} Results for Facet: {}'.format(len(results['facets'][facet]), facet))
 
         for item in results['facets'][facet]:
-            click.echo(click.style('{:28s}'.format(str(item['value']).encode('ascii', errors='replace')), fg='cyan'), nl=False)
+            value = item['value']
+            if isinstance(value, basestring):
+                value = value.encode('ascii', errors='replace').decode('ascii')
+            else:
+                value = str(value)
+            
+            click.echo(click.style('{:28s}'.format(value), fg='cyan'), nl=False)
             click.echo(click.style('{:12,d}'.format(item['count']), fg='green'))
 
         click.echo('')

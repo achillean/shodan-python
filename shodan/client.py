@@ -5,7 +5,7 @@ shodan.client
 
 This module implements the Shodan API.
 
-:copyright: (c) 2014-2015 by John Matherly
+:copyright: (c) 2014- by John Matherly
 """
 import time
 

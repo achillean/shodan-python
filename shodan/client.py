@@ -200,13 +200,15 @@ class Shodan:
             query_args['facets'] = create_facet_string(facets)
         return self._request('/shodan/host/count', query_args)
     
-    def host(self, ips, history=False):
+    def host(self, ips, history=False, minify=False):
         """Get all available information on an IP.
 
         :param ip: IP of the computer
         :type ip: str
         :param history: (optional) True if you want to grab the historical (non-current) banners for the host, False otherwise.
         :type history: bool
+        :param minify: (optional) True to only return the list of ports and the general host information, no banners, False otherwise.
+        :type minify: bool
         """
         if isinstance(ips, basestring):
             ips = [ips]
@@ -214,6 +216,8 @@ class Shodan:
         params = {}
         if history:
             params['history'] = history
+        if minify:
+            params['minify'] = minify
         return self._request('/shodan/host/%s' % ','.join(ips), params)
     
     def info(self):

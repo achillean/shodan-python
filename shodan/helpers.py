@@ -102,3 +102,9 @@ def get_screenshot(banner):
     if 'opts' in banner and 'screenshot' in banner['opts']:
         return banner['opts']['screenshot']
     return None
+
+
+def get_ip(banner):
+    if 'ipv6' in banner:
+        return banner['ipv6']
+    return banner['ip_str']

@@ -37,7 +37,7 @@ import requests
 import time
 
 # The file converters that are used to go from .json.gz to various other formats
-from shodan.cli.converter import CsvConverter, KmlConverter
+from shodan.cli.converter import CsvConverter, KmlConverter, GeoJsonConverter
 
 # Constants
 from shodan.cli.settings import SHODAN_CONFIG_DIR, COLORIZE_FIELDS
@@ -57,12 +57,6 @@ try:
     basestring
 except NameError:
     basestring = str
-
-# Utility methods
-def get_ip(banner):
-    if 'ipv6' in banner:
-        return banner['ipv6']
-    return banner['ip_str']
 
 
 def escape_data(args):
@@ -132,7 +126,7 @@ def main():
 
 @main.command()
 @click.argument('input', metavar='<input file>')
-@click.argument('format', metavar='<output format>', type=click.Choice(['kml', 'csv']))
+@click.argument('format', metavar='<output format>', type=click.Choice(['kml', 'csv', 'geo.json']))
 def convert(input, format):
     """Convert the given input data file into a different format.
 
@@ -156,6 +150,7 @@ def convert(input, format):
     converter = {
         'kml': KmlConverter,
         'csv': CsvConverter,
+        'geo.json': GeoJsonConverter,
     }.get(format)(fout)
     
     converter.process([input])
@@ -595,7 +590,7 @@ def scan_internet(quiet, port, protocol):
 
                             if not quiet:
                                 click.echo('{0:<40} {1:<20} {2}'.format(
-                                        click.style(get_ip(banner), fg=COLORIZE_FIELDS['ip_str']),
+                                        click.style(helpers.get_ip(banner), fg=COLORIZE_FIELDS['ip_str']),
                                         click.style(str(banner['port']), fg=COLORIZE_FIELDS['port']),
                                         ';'.join(banner['hostnames'])
                                     )
@@ -700,7 +695,7 @@ def scan_submit(wait, filename, force, verbose, netblocks):
                         # Don't show duplicate banners
                         cache_key = '{}:{}'.format(ip, banner['port'])
                         if cache_key not in cache:
-                            hosts[get_ip(banner)][banner['port']] = banner
+                            hosts[helpers.get_ip(banner)][banner['port']] = banner
                             cache[cache_key] = True
 
                         # If we've grabbed data for more than 60 seconds it might just be a busy network and we should move on

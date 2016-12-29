@@ -108,3 +108,12 @@ def get_ip(banner):
     if 'ipv6' in banner:
         return banner['ipv6']
     return banner['ip_str']
+
+
+def open_file(filename, mode='a', compresslevel=9):
+    return gzip.open(filename, mode, compresslevel)
+
+
+def write_banner(fout, banner):
+    line = simplejson.dumps(banner) + '\n'
+    fout.write(line.encode('utf-8'))

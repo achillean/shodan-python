@@ -68,7 +68,7 @@ def escape_data(args):
 def timestr():
     return datetime.datetime.utcnow().strftime('%Y-%m-%d')
 
-def open_file(directory, timestr, compresslevel=9):
+def open_streaming_file(directory, timestr, compresslevel=9):
     return gzip.open('%s/%s.json.gz' % (directory, timestr), 'a', compresslevel)
 
 def get_banner_field(banner, flat_field):
@@ -112,10 +112,6 @@ def match_filters(banner, filters):
             pass
 
     return True
-
-def write_banner(fout, banner):
-    line = simplejson.dumps(banner) + '\n'
-    fout.write(line.encode('utf-8'))
 
 
 @with_plugins(iter_entry_points('shodan.cli.plugins'))
@@ -346,13 +342,13 @@ def download(limit, filename, query):
     if limit <= 0:
         limit = total
 
-    with gzip.open(filename, 'w') as fout:
+    with helpers.open_file(filename, 'w') as fout:
         count = 0
         try:
             cursor = api.search_cursor(query, minify=False)
             with click.progressbar(cursor, length=limit) as bar:
                 for banner in bar:
-                    write_banner(fout, banner)
+                    helpers.write_banner(fout, banner)
                     count += 1
 
                     if count >= limit:
@@ -492,7 +488,7 @@ def parse(color, fields, filters, filename, separator, filenames):
         # Add the appropriate extension if it's not there atm
         if not filename.endswith('.json.gz'):
             filename += '.json.gz'
-        fout = gzip.open(filename, 'a')
+        fout = helpers.open_file(filename)
 
     for banner in helpers.iterate_files(filenames):
         row = ''
@@ -503,7 +499,7 @@ def parse(color, fields, filters, filename, separator, filenames):
 
         # Append the data
         if fout:
-            write_banner(fout, banner)
+            helpers.write_banner(fout, banner)
 
         # Loop over all the fields and print the banner as a row
         for field in fields:
@@ -574,7 +570,7 @@ def scan_internet(quiet, port, protocol):
             # Create the output file
             filename = '{0}-{1}.json.gz'.format(port, protocol)
             counter = 0
-            with gzip.open(filename, 'w') as fout:
+            with helpers.open_file(filename, 'w') as fout:
                 click.echo('Saving results to file: {0}'.format(filename))
 
                 # Start listening for results
@@ -586,7 +582,7 @@ def scan_internet(quiet, port, protocol):
                     try:
                         for banner in api.stream.ports([port], timeout=90):
                             counter += 1
-                            write_banner(fout, banner)
+                            helpers.write_banner(fout, banner)
 
                             if not quiet:
                                 click.echo('{0:<40} {1:<20} {2}'.format(
@@ -673,7 +669,7 @@ def scan_submit(wait, filename, force, verbose, netblocks):
                 # Add the appropriate extension if it's not there atm
                 if not filename.endswith('.json.gz'):
                     filename += '.json.gz'
-                fout = gzip.open(filename, 'w')
+                fout = helpers.open_file(filename, 'w')
 
             # Start a spinner
             finished_event = threading.Event()
@@ -819,7 +815,7 @@ def scan_submit(wait, filename, force, verbose, netblocks):
 
                         # Save the banner in a file if necessary
                         if fout:
-                            write_banner(fout, hosts[ip][port])
+                            helpers.write_banner(fout, hosts[ip][port])
 
                     click.echo('')
             else:
@@ -1098,7 +1094,7 @@ def stream(color, fields, separator, limit, datadir, ports, quiet, timeout, stre
     fout = None
 
     if datadir:
-        fout = open_file(datadir, last_time, compresslevel)
+        fout = open_streaming_file(datadir, last_time, compresslevel)
 
     while not quit:
         try:
@@ -1117,8 +1113,8 @@ def stream(color, fields, separator, limit, datadir, ports, quiet, timeout, stre
                     if cur_time != last_time:
                             last_time = cur_time
                             fout.close()
-                            fout = open_file(datadir, last_time)
-                    write_banner(fout, banner)
+                            fout = open_streaming_file(datadir, last_time)
+                    helpers.write_banner(fout, banner)
 
                 # Print the banner information to stdout
                 if not quiet:

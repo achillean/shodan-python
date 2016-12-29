@@ -161,7 +161,7 @@ class Shodan:
             raise APIError('Unable to connect to Shodan')
 
         # Check that the API key wasn't rejected
-        if data.status_code >= 401 and data.status_code < 500:
+        if data.status_code == 401:
             try:
                 # Return the actual error message if the API returned valid JSON
                 error = data.json()['error']

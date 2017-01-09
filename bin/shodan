@@ -418,9 +418,9 @@ def host(format, history, ip):
         for banner in sorted(host['data'], key=lambda k: k['port']):
             product = ''
             version = ''
-            if 'product' in banner:
+            if 'product' in banner and banner['product']:
                 product = banner['product']
-            if 'version' in banner:
+            if 'version' in banner and banner['version']:
                 version = '({})'.format(banner['version'])
 
             click.echo(click.style('{:>7d} '.format(banner['port']), fg='cyan'), nl=False)
@@ -434,9 +434,9 @@ def host(format, history, ip):
 
             # Show optional ssl info
             if 'ssl' in banner:
-                if 'versions' in banner['ssl']:
+                if 'versions' in banner['ssl'] and banner['ssl']['versions']:
                     click.echo('\t|-- SSL Versions: {}'.format(', '.join([version for version in sorted(banner['ssl']['versions']) if not version.startswith('-')])))
-                if 'dhparams' in banner['ssl']:
+                if 'dhparams' in banner['ssl'] and banner['ssl']['dhparams']:
                     click.echo('\t|-- Diffie-Hellman Parameters:')
                     click.echo('\t\t{:15s}{}\n\t\t{:15s}{}'.format('Bits:', banner['ssl']['dhparams']['bits'], 'Generator:', banner['ssl']['dhparams']['generator']))
                     if 'fingerprint' in banner['ssl']['dhparams']:

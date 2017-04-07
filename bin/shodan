@@ -1123,16 +1123,17 @@ def stream(color, fields, separator, limit, datadir, ports, quiet, timeout, stre
                     # Loop over all the fields and print the banner as a row
                     for field in fields:
                         tmp = ''
-                        if field in banner and banner[field]:
-                            field_type = type(banner[field])
+                        value = get_banner_field(banner, field)
+                        if value:
+                            field_type = type(value)
 
                             # If the field is an array then merge it together
                             if field_type == list:
-                                tmp = ';'.join(banner[field])
+                                tmp = ';'.join(value)
                             elif field_type in [int, float]:
-                                tmp = str(banner[field])
+                                tmp = str(value)
                             else:
-                                tmp = escape_data(banner[field])
+                                tmp = escape_data(value)
 
                             # Colorize certain fields if the user wants it
                             if color:

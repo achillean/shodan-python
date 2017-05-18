@@ -1,4 +1,4 @@
 click
+click-plugins
 colorama
 requests
-simplejson

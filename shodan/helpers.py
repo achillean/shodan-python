@@ -1,6 +1,6 @@
 import gzip
 import requests
-import simplejson
+import json
 
 from .exception import APIError
 
@@ -44,7 +44,7 @@ def api_request(key, function, params=None, data=None, base_url='https://api.sho
     while tries <= retries:
         try:
             if method.lower() == 'post':
-                data = requests.post(base_url + function, simplejson.dumps(data), params=params, headers={'content-type': 'application/json'})
+                data = requests.post(base_url + function, json.dumps(data), params=params, headers={'content-type': 'application/json'})
             elif method.lower() == 'delete':
                 data = requests.delete(base_url + function, params=params)
             else:
@@ -95,7 +95,7 @@ def iterate_files(files):
 
         for line in fin:
             # Convert the JSON into a native Python object
-            banner = simplejson.loads(line)
+            banner = json.loads(line)
             yield banner
 
 def get_screenshot(banner):
@@ -115,5 +115,5 @@ def open_file(filename, mode='a', compresslevel=9):
 
 
 def write_banner(fout, banner):
-    line = simplejson.dumps(banner) + '\n'
+    line = json.dumps(banner) + '\n'
     fout.write(line.encode('utf-8'))

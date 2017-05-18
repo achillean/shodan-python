@@ -29,7 +29,6 @@ import os
 import os.path
 import shodan
 import shodan.helpers as helpers
-import simplejson
 import socket
 import sys
 import threading

@@ -1,5 +1,5 @@
 import requests
-import simplejson
+import json
 import ssl
 
 from .exception import APIError
@@ -24,7 +24,7 @@ class Stream:
 
         if req.status_code != 200:
             try:
-                data = simplejson.loads(req.text)
+                data = json.loads(req.text)
                 raise APIError(data['error'])
             except APIError as e:
                 raise
@@ -39,7 +39,7 @@ class Stream:
                 if raw:
                     yield line
                 else:
-                    yield simplejson.loads(line)
+                    yield json.loads(line)
 
     def alert(self, aid=None, timeout=None, raw=False):
         if aid:

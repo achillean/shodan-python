@@ -10,7 +10,7 @@ This module implements the Shodan API.
 import time
 
 import requests
-import simplejson
+import json
 
 from .exception import APIError
 from .helpers import api_request, create_facet_string
@@ -263,7 +263,7 @@ class Shodan:
             ips = [ips]
         
         if isinstance(ips, dict):
-            networks = simplejson.dumps(ips)
+            networks = json.dumps(ips)
         else:
             networks = ','.join(ips)
 

@@ -83,6 +83,7 @@ def api_request(key, function, params=None, data=None, base_url='https://api.sho
 
 def iterate_files(files, fast=False):
     """Loop over all the records of the provided Shodan output file(s)."""
+    from json import loads
     if fast:
         # Try to use ujson for parsing JSON if it's available and the user requested faster throughput
         # It's significantly faster at encoding/ decoding JSON but it doesn't support as
@@ -91,7 +92,7 @@ def iterate_files(files, fast=False):
         try:
             from ujson import loads
         except:
-            from json import loads
+            pass
     
     if isinstance(files, basestring):
         files = [files]
@@ -105,7 +106,7 @@ def iterate_files(files, fast=False):
 
         for line in fin:
             # Convert the JSON into a native Python object
-            banner = json.loads(line)
+            banner = loads(line)
             yield banner
 
 def get_screenshot(banner):

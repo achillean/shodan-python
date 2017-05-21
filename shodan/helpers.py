@@ -1,6 +1,14 @@
 import gzip
 import requests
-import json
+
+# Try to use ujson for parsing JSON if it's available
+# It's significantly faster at encoding/ decoding JSON but it doesn't support as
+# many options as the standard library. As such, we're mostly interested in using it for
+# decoding since reading/ parsing files will use up the most time.
+try:
+    import ujson as json
+except:
+    import json
 
 from .exception import APIError
 

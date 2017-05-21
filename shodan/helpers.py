@@ -1,14 +1,6 @@
 import gzip
 import requests
-
-# Try to use ujson for parsing JSON if it's available
-# It's significantly faster at encoding/ decoding JSON but it doesn't support as
-# many options as the standard library. As such, we're mostly interested in using it for
-# decoding since reading/ parsing files will use up the most time.
-try:
-    import ujson as json
-except:
-    import json
+import json
 
 from .exception import APIError
 
@@ -89,8 +81,18 @@ def api_request(key, function, params=None, data=None, base_url='https://api.sho
     return data
 
 
-def iterate_files(files):
+def iterate_files(files, fast=False):
     """Loop over all the records of the provided Shodan output file(s)."""
+    if fast:
+        # Try to use ujson for parsing JSON if it's available and the user requested faster throughput
+        # It's significantly faster at encoding/ decoding JSON but it doesn't support as
+        # many options as the standard library. As such, we're mostly interested in using it for
+        # decoding since reading/ parsing files will use up the most time.
+        try:
+            from ujson import loads
+        except:
+            from json import loads
+    
     if isinstance(files, basestring):
         files = [files]
     

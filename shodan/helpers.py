@@ -132,7 +132,6 @@ def write_banner(fout, banner):
 
 def humanize_bytes(bytes, precision=1):
     """Return a humanized string representation of a number of bytes.
-
     >>> humanize_bytes(1)
     '1 byte'
     >>> humanize_bytes(1024)
@@ -150,17 +149,15 @@ def humanize_bytes(bytes, precision=1):
     >>> humanize_bytes(1024*1234*1111,1)
     '1.3 GB'
     """
-    abbrevs = (
-        (1<<50L, 'PB'),
-        (1<<40L, 'TB'),
-        (1<<30L, 'GB'),
-        (1<<20L, 'MB'),
-        (1<<10L, 'kB'),
-        (1, 'bytes')
-    )
+
     if bytes == 1:
         return '1 byte'
-    for factor, suffix in abbrevs:
-        if bytes >= factor:
-            break
-    return '%.*f %s' % (precision, bytes / factor, suffix)
+    if bytes < 1024:
+        return '%.*f %s' % (precision, bytes, "bytes")
+    
+    suffixes = ['KB', 'MB', 'GB', 'TB', 'PB']
+    multiple = 1024.0    #.0 force float on python 2
+    for suffix in suffixes:
+        bytes /= multiple
+        if bytes < multiple:
+            return '%.*f %s' % (precision, bytes, suffix)

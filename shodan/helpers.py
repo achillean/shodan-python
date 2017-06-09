@@ -161,3 +161,4 @@ def humanize_bytes(bytes, precision=1):
         bytes /= multiple
         if bytes < multiple:
             return '%.*f %s' % (precision, bytes, suffix)
+    return '%.*f %s' % (precision, bytes, suffix)

@@ -105,7 +105,7 @@ class ExcelConverter(Converter):
         summary_sheet.write(0, 3, 'Ports Distribution', bold)
         row = 1
         col = 3
-        for key, value in sorted(ports.iteritems(), reverse=True, key=lambda (k, v): (v, k)):
+        for key, value in sorted(ports.iteritems(), reverse=True, key=lambda kv: (kv[1], kv[0])):
             summary_sheet.write(row, col, key)
             summary_sheet.write(row, col + 1, value)
             row += 1

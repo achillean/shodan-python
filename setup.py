@@ -6,7 +6,7 @@ dependencies = open('requirements.txt', 'r').read().split('\n')
 
 setup(
     name = 'shodan',
-    version = '1.6.11',
+    version = '1.6.12',
     description = 'Python library and command-line utility for Shodan (https://developer.shodan.io)',
     author = 'John Matherly',
     author_email = 'jmath@shodan.io',

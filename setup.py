@@ -2,6 +2,8 @@
 
 from setuptools import setup
 
+dependencies = open('requirements.txt', 'r').read().split('\n')
+
 setup(
     name = 'shodan',
     version = '1.6.9',
@@ -11,7 +13,7 @@ setup(
     url = 'http://github.com/achillean/shodan-python/tree/master',
     packages = ['shodan', 'shodan.cli', 'shodan.cli.converter'],
     scripts = ['bin/shodan'],
-    install_requires=["requests>=2.2.1", "click", "click-plugins", "colorama"],
+    install_requires = dependencies,
     classifiers = [
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',

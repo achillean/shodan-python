@@ -105,6 +105,9 @@ def iterate_files(files, fast=False):
             fin = open(filename, 'r')
 
         for line in fin:
+            # Ensure the line has been decoded into a string to prevent errors w/ Python3
+            line = line.decode('utf-8')
+
             # Convert the JSON into a native Python object
             banner = loads(line)
             yield banner

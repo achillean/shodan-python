@@ -37,7 +37,7 @@ import requests
 import time
 
 # The file converters that are used to go from .json.gz to various other formats
-from shodan.cli.converter import CsvConverter, KmlConverter, GeoJsonConverter
+from shodan.cli.converter import CsvConverter, KmlConverter, GeoJsonConverter, ExcelConverter
 
 # Constants
 from shodan.cli.settings import SHODAN_CONFIG_DIR, COLORIZE_FIELDS
@@ -122,7 +122,7 @@ def main():
 
 @main.command()
 @click.argument('input', metavar='<input file>')
-@click.argument('format', metavar='<output format>', type=click.Choice(['kml', 'csv', 'geo.json']))
+@click.argument('format', metavar='<output format>', type=click.Choice(['kml', 'csv', 'geo.json', 'xlsx']))
 def convert(input, format):
     """Convert the given input data file into a different format.
 
@@ -147,6 +147,7 @@ def convert(input, format):
         'kml': KmlConverter,
         'csv': CsvConverter,
         'geo.json': GeoJsonConverter,
+        'xlsx': ExcelConverter,
     }.get(format)(fout)
     
     converter.process([input])

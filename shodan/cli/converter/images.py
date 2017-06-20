@@ -2,8 +2,8 @@
 from .base import Converter
 from ...helpers import iterate_files, get_ip, get_screenshot
 
-from collections import defaultdict, MutableMapping
-from xlsxwriter import Workbook
+# Needed for decoding base64-strings in Python3
+from codecs import decode
 
 import os
 
@@ -46,6 +46,6 @@ class ImagesConverter(Converter):
                     counter += 1
                 filename = tmpname + '.jpg'
 
-                fout = open(filename, 'w')
-                fout.write(screenshot['data'].decode('base64'))
+                fout = open(filename, 'wb')
+                fout.write(decode(screenshot['data'].encode(), 'base64'))
                 fout.close()

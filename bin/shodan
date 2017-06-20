@@ -37,7 +37,7 @@ import requests
 import time
 
 # The file converters that are used to go from .json.gz to various other formats
-from shodan.cli.converter import CsvConverter, KmlConverter, GeoJsonConverter, ExcelConverter
+from shodan.cli.converter import CsvConverter, KmlConverter, GeoJsonConverter, ExcelConverter, ImagesConverter
 
 # Constants
 from shodan.cli.settings import SHODAN_CONFIG_DIR, COLORIZE_FIELDS
@@ -122,7 +122,7 @@ def main():
 
 @main.command()
 @click.argument('input', metavar='<input file>')
-@click.argument('format', metavar='<output format>', type=click.Choice(['kml', 'csv', 'geo.json', 'xlsx']))
+@click.argument('format', metavar='<output format>', type=click.Choice(['kml', 'csv', 'geo.json', 'images', 'xlsx']))
 def convert(input, format):
     """Convert the given input data file into a different format.
 
@@ -147,6 +147,7 @@ def convert(input, format):
         'kml': KmlConverter,
         'csv': CsvConverter,
         'geo.json': GeoJsonConverter,
+        'images': ImagesConverter,
         'xlsx': ExcelConverter,
     }.get(format)(fout)
     
@@ -155,7 +156,10 @@ def convert(input, format):
     finished_event.set()
     progress_bar_thread.join()
 
-    click.echo(click.style('\rSuccessfully created new file: {}'.format(filename), fg='green'))
+    if format == 'images':
+        click.echo(click.style('\rSuccessfully extracted images to directory: {}'.format(converter.dirname), fg='green'))
+    else:
+        click.echo(click.style('\rSuccessfully created new file: {}'.format(filename), fg='green'))
 
 
 @main.command()

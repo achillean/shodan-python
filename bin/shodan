@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 """
 Shodan CLI
 
@@ -21,79 +22,54 @@ The following commands are currently supported:
 
 import click
 import collections
+import csv
 import datetime
 import gzip
 import itertools
 import os
 import os.path
 import shodan
-import simplejson
+import shodan.helpers as helpers
 import socket
 import sys
 import threading
 import requests
 import time
 
+# The file converters that are used to go from .json.gz to various other formats
+from shodan.cli.converter import CsvConverter, KmlConverter, GeoJsonConverter, ExcelConverter, ImagesConverter
+
 # Constants
-SHODAN_CONFIG_DIR = '~/.shodan/'
-ARRAY_SEPARATOR = ';'
-COLORIZE_FIELDS = {
-    'ip_str': 'green',
-    'port': 'yellow',
-    'data': 'white',
-    'hostnames': 'magenta',
-    'org': 'cyan',
-    'vulns': 'red',
-}
+from shodan.cli.settings import SHODAN_CONFIG_DIR, COLORIZE_FIELDS
+
+# Helper methods
+from shodan.cli.helpers import get_api_key
+
+# Allow 3rd-parties to develop custom commands
+from click_plugins import with_plugins
+from pkg_resources import iter_entry_points
 
 # Make "-h" work like "--help"
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
-# Utility methods
-def get_api_key():
-    shodan_dir = os.path.expanduser(SHODAN_CONFIG_DIR)
-    keyfile = shodan_dir + '/api_key'
-
-    # If the file doesn't yet exist let the user know that they need to
-    # initialize the shodan cli
-    if not os.path.exists(keyfile):
-        raise click.ClickException('Please run "shodan init <api key>" before using this command')
-
-    # Make sure it is a read-only file
-    os.chmod(keyfile, 0600)
-
-    with open(keyfile, 'r') as fin:
-        return fin.read().strip()
-
-    raise click.ClickException('Please run "shodan init <api key>" before using this command')
-
-def get_ip(banner):
-    if 'ipv6' in banner:
-        return banner['ipv6']
-    return banner['ip_str']
+# Define a basestring type if necessary for Python3 compatibility
+try:
+    basestring
+except NameError:
+    basestring = str
 
 
 def escape_data(args):
-    return args.encode('ascii', 'replace').replace('\n', '\\n').replace('\r', '\\r').replace('\t', '\\t')
+    # Ensure the provided string isn't unicode data
+    if not isinstance(args, str):
+        args = args.encode('ascii', 'replace')
+    return args.replace('\n', '\\n').replace('\r', '\\r').replace('\t', '\\t')
 
 def timestr():
-        return datetime.datetime.utcnow().strftime('%Y-%m-%d')
+    return datetime.datetime.utcnow().strftime('%Y-%m-%d')
 
-def open_file(directory, timestr):
-        return gzip.open('%s/%s.json.gz' % (directory, timestr), 'a', 1)
-
-def iterate_files(files):
-    for filename in files:
-        # Create a file handle depending on the filetype
-        if filename.endswith('.gz'):
-            fin = gzip.open(filename, 'r')
-        else:
-            fin = open(filename, 'r')
-
-        for line in fin:
-            # Convert the JSON into a native Python object
-            banner = simplejson.loads(line)
-            yield banner
+def open_streaming_file(directory, timestr, compresslevel=9):
+    return gzip.open('%s/%s.json.gz' % (directory, timestr), 'a', compresslevel)
 
 def get_banner_field(banner, flat_field):
     # The provided field is a collapsed form of the actual field
@@ -113,6 +89,10 @@ def match_filters(banner, filters):
     for args in filters:
         flat_field, check = args.split(':', 1)
         value = get_banner_field(banner, flat_field)
+
+        # If the field doesn't exist on the banner then ignore the record
+        if not value:
+            return False
 
         # It must match all filters to be allowed
         field_type = type(value)
@@ -134,6 +114,7 @@ def match_filters(banner, filters):
     return True
 
 
+@with_plugins(iter_entry_points('shodan.cli.plugins'))
 @click.group(context_settings=CONTEXT_SETTINGS)
 def main():
     pass
@@ -141,111 +122,12 @@ def main():
 
 @main.command()
 @click.argument('input', metavar='<input file>')
-@click.argument('format', metavar='<output format>', type=click.Choice(['kml']))
+@click.argument('format', metavar='<output format>', type=click.Choice(['kml', 'csv', 'geo.json', 'images', 'xlsx']))
 def convert(input, format):
     """Convert the given input data file into a different format.
 
     Example: shodan convert data.json.gz kml
     """
-    #---------------------------------------
-    # KML Support
-    #---------------------------------------
-    KML_HEADER = """<?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://www.opengis.net/kml/2.2">
-  <Document>"""
-    KML_FOOTER = """</Document></kml>"""
-    def kml_writer(fout, host):
-        try:
-            ip = host.get('ip_str', host.get('ipv6', None))
-            lat, lon = host['location']['latitude'], host['location']['longitude']
-
-            placemark = '<Placemark><name><![CDATA[<h1 style="margin-bottom:0;padding-bottom:0;font-size:1.5em">{}</h1>]]></name>'.format(ip)
-            placemark += '<description><![CDATA['
-
-            if 'hostnames' in host and host['hostnames']:
-                placemark += '<div><a style="color: #999;margin-top:-10px;padding-top:0;" href="http://{0}" target="_blank">{0}</a></div>'.format(host['hostnames'][0])
-
-            test = """
-    <table>
-        <tbody>
-          <tr>
-            <td>City</td>
-            <th>Albuquerque</th>
-          </tr>
-          <tr>
-            <td>Country</td>
-            <th>United States</th>
-          </tr>
-          <tr>
-            <td>Organization</td>
-            <th>Nexcess.net L.L.C.</th>
-          </tr>
-        </tbody>
-    </table>
-    <h2>Ports</h2>
-    <ul>
-            """
-
-            placemark += '<h2>Ports</h2><ul>'
-
-            for port in host['ports']:
-                placemark += """
-                    <li style="background-color: #1CA8DD;
-                    color: #FFF;
-                    float: left;
-                    font-family: Arial;
-                    font-size: 12px;
-                    font-weight: bold;
-                    height: 48px;
-                    margin: 5px;
-                    position: relative;
-                    text-shadow: none;
-                    width: 48px;"><span style="color: #FFF;
-                    height: 34px;
-                    position: absolute;
-                    text-align: center;
-                    top: 30%;
-                    width: 48px;">{}</span>
-                        </li>
-                """.format(port)
-
-            placemark += '</ul><div style="clear:both"></div>'
-
-            placemark += """
-                <div style="text-align:center"><a href="https://www.shodan.io/host/{0}" style="display: inline-block;
-                    padding: 4px 10px;
-                    margin-bottom: 0px;
-                    font-size: 13px;
-                    line-height: 18px;
-                    color: #333;
-                    text-align: center;
-                    text-shadow: 0px 1px 1px rgba(255, 255, 255, 0.75);
-                    vertical-align: middle;
-                    cursor: pointer;
-                    background-color: #F5F5F5;
-                    background-image: -moz-linear-gradient(center top , #FFF, #E6E6E6);
-                    background-repeat: repeat-x;
-                    border-width: 1px;
-                    border-style: solid;
-                    border-color: #CCC #CCC #B3B3B3;
-                    -moz-border-top-colors: none;
-                    -moz-border-right-colors: none;
-                    -moz-border-bottom-colors: none;
-                    -moz-border-left-colors: none;
-                    border-image: none;
-                    border-radius: 4px;
-                    box-shadow: 0px 1px 0px rgba(255, 255, 255, 0.2) inset, 0px 1px 2px rgba(0, 0, 0, 0.05);" target="_blank">View Details</a></div>
-                    <div>powered by <a href="https://www.shodan.io" target="_blank">Shodan</a></div>
-            """.format(ip)
-
-            placemark += ']]></description>'
-            placemark += '<Point><coordinates>{},{}</coordinates></Point>'.format(lon, lat)
-            placemark += '</Placemark>'
-
-            fout.write(placemark)
-        except Exception, e:
-            pass
-
     # Get the basename for the input file
     basename = input.replace('.json.gz', '').replace('.json', '')
 
@@ -254,35 +136,30 @@ def convert(input, format):
 
     # Open the output file
     fout = open(filename, 'w')
-    
+
     # Start a spinner
     finished_event = threading.Event()
     progress_bar_thread = threading.Thread(target=async_spinner, args=(finished_event,))
     progress_bar_thread.start()
 
-    fout.write(KML_HEADER)
+    # Initialize the file converter
+    converter = {
+        'kml': KmlConverter,
+        'csv': CsvConverter,
+        'geo.json': GeoJsonConverter,
+        'images': ImagesConverter,
+        'xlsx': ExcelConverter,
+    }.get(format)(fout)
 
-    hosts = {}
-    for banner in iterate_files([input]):
-        ip = banner.get('ip_str', banner.get('ipv6', None))
-        if not ip:
-            continue
-
-        if ip not in hosts:
-            hosts[ip] = banner
-            hosts[ip]['ports'] = []
-
-        hosts[ip]['ports'].append(banner['port'])
-
-    for ip, host in hosts.iteritems():
-        kml_writer(fout, host)
-
-    fout.write(KML_FOOTER)
+    converter.process([input])
 
     finished_event.set()
     progress_bar_thread.join()
 
-    click.echo(click.style('Successfully created new file: {}'.format(filename), fg='green'))
+    if format == 'images':
+        click.echo(click.style('\rSuccessfully extracted images to directory: {}'.format(converter.dirname), fg='green'))
+    else:
+        click.echo(click.style('\rSuccessfully created new file: {}'.format(filename), fg='green'))
 
 
 @main.command()
@@ -302,7 +179,7 @@ def init(key):
     try:
         api = shodan.Shodan(key)
         test = api.info()
-    except shodan.APIError, e:
+    except shodan.APIError as e:
         raise click.ClickException('Invalid API key')
 
     # Store the API key in the user's directory
@@ -311,11 +188,12 @@ def init(key):
         fout.write(key.strip())
         click.echo(click.style('Successfully initialized', fg='green'))
 
-    os.chmod(keyfile, 0600)
+    os.chmod(keyfile, 0o600)
 
 
 @main.group()
 def alert():
+    """Manage the network alerts for your account"""
     pass
 
 
@@ -331,9 +209,26 @@ def alert_clear():
         for alert in alerts:
             click.echo('Removing {} ({})'.format(alert['name'], alert['id']))
             api.delete_alert(alert['id'])
-    except shodan.APIError, e:
+    except shodan.APIError as e:
         raise click.ClickException(e.value)
     click.echo("Alerts deleted")
+
+@alert.command(name='create')
+@click.argument('name', metavar='<name>')
+@click.argument('netblock', metavar='<netblock>')
+def alert_create(name, netblock):
+    """Create a network alert to monitor an external network"""
+    key = get_api_key()
+
+    # Get the list
+    api = shodan.Shodan(key)
+    try:
+        alert = api.create_alert(name, netblock)
+    except shodan.APIError as e:
+        raise click.ClickException(e.value)
+
+    click.echo(click.style('Successfully created network alert!', fg='green'))
+    click.echo(click.style('Alert ID: {}'.format(alert['id']), fg='cyan'))
 
 @alert.command(name='list')
 @click.option('--expired', help='Whether or not to show expired alerts.', default=True, type=bool)
@@ -345,7 +240,7 @@ def alert_list(expired):
     api = shodan.Shodan(key)
     try:
         results = api.alerts(include_expired=expired)
-    except shodan.APIError, e:
+    except shodan.APIError as e:
         raise click.ClickException(e.value)
 
     if len(results) > 0:
@@ -379,7 +274,7 @@ def alert_remove(alert_id):
     api = shodan.Shodan(key)
     try:
         results = api.delete_alert(alert_id)
-    except shodan.APIError, e:
+    except shodan.APIError as e:
         raise click.ClickException(e.value)
     click.echo("Alert deleted")
 
@@ -401,7 +296,7 @@ def count(query):
     api = shodan.Shodan(key)
     try:
         results = api.count(query)
-    except shodan.APIError, e:
+    except shodan.APIError as e:
         raise click.ClickException(e.value)
 
     click.echo(results['total'])
@@ -449,16 +344,16 @@ def download(limit, filename, query):
         limit = total
 
     # A limit of -1 means that we should download all the data
-    if limit == -1:
+    if limit <= 0:
         limit = total
 
-    with gzip.open(filename, 'w') as fout:
+    with helpers.open_file(filename, 'w') as fout:
         count = 0
         try:
-            cursor = api.search_cursor(query)
+            cursor = api.search_cursor(query, minify=False)
             with click.progressbar(cursor, length=limit) as bar:
                 for banner in bar:
-                    fout.write(simplejson.dumps(banner) + '\n')
+                    helpers.write_banner(fout, banner)
                     count += 1
 
                     if count >= limit:
@@ -474,14 +369,17 @@ def download(limit, filename, query):
 
 @main.command()
 @click.option('--format', help='The output format for the host information. Possible values are: pretty, csv, tsv. (placeholder)', default='pretty', type=str)
+@click.option('--history', help='Show the complete history of the host.', default=False, is_flag=True)
+@click.option('--filename', '-O', help='Save the host information in the given file (append if file exists).', default=None)
+@click.option('--save', '-S', help='Save the host information in the a file named after the IP (append if file exists).', default=False, is_flag=True)
 @click.argument('ip', metavar='<ip address>')
-def host(format, ip):
+def host(format, history, filename, save, ip):
     """View all available information for an IP address"""
     key = get_api_key()
     api = shodan.Shodan(key)
 
     try:
-        host = api.host(ip)
+        host = api.host(ip, history=history)
 
         # General info
         click.echo(click.style(ip, fg='green'))
@@ -527,25 +425,47 @@ def host(format, ip):
         for banner in sorted(host['data'], key=lambda k: k['port']):
             product = ''
             version = ''
-            if 'product' in banner:
+            if 'product' in banner and banner['product']:
                 product = banner['product']
-            if 'version' in banner:
+            if 'version' in banner and banner['version']:
                 version = '({})'.format(banner['version'])
 
             click.echo(click.style('{:>7d} '.format(banner['port']), fg='cyan'), nl=False)
-            click.echo('{} {}'.format(product, version))
+            click.echo('{} {}'.format(product, version), nl=False)
+
+            if history:
+                # Format the timestamp to only show the year-month-day
+                date = banner['timestamp'][:10]
+                click.echo(click.style('\t\t({})'.format(date), fg='white', dim=True), nl=False)
+            click.echo('')
 
             # Show optional ssl info
             if 'ssl' in banner:
-                if 'versions' in banner['ssl']:
+                if 'versions' in banner['ssl'] and banner['ssl']['versions']:
                     click.echo('\t|-- SSL Versions: {}'.format(', '.join([version for version in sorted(banner['ssl']['versions']) if not version.startswith('-')])))
-                if 'dhparams' in banner['ssl']:
+                if 'dhparams' in banner['ssl'] and banner['ssl']['dhparams']:
                     click.echo('\t|-- Diffie-Hellman Parameters:')
                     click.echo('\t\t{:15s}{}\n\t\t{:15s}{}'.format('Bits:', banner['ssl']['dhparams']['bits'], 'Generator:', banner['ssl']['dhparams']['generator']))
                     if 'fingerprint' in banner['ssl']['dhparams']:
                         click.echo('\t\t{:15s}{}'.format('Fingerprint:', banner['ssl']['dhparams']['fingerprint']))
-    except shodan.APIError, e:
+
+        # Store the results
+        if filename or save:
+            if save:
+                filename = '{}.json.gz'.format(ip)
+
+            # Add the appropriate extension if it's not there atm
+            if not filename.endswith('.json.gz'):
+                filename += '.json.gz'
+
+            # Create/ append to the file
+            fout = helpers.open_file(filename)
+
+            for banner in sorted(host['data'], key=lambda k: k['port']):
+                helpers.write_banner(fout, banner)
+    except shodan.APIError as e:
         raise click.ClickException(e.value)
+
 
 
 @main.command()
@@ -555,7 +475,7 @@ def info():
     api = shodan.Shodan(key)
     try:
         results = api.info()
-    except shodan.APIError, e:
+    except shodan.APIError as e:
         raise click.ClickException(e.value)
 
     click.echo("""Query credits available: {0}
@@ -591,9 +511,9 @@ def parse(color, fields, filters, filename, separator, filenames):
         # Add the appropriate extension if it's not there atm
         if not filename.endswith('.json.gz'):
             filename += '.json.gz'
-        fout = gzip.open(filename, 'a')
+        fout = helpers.open_file(filename)
 
-    for banner in iterate_files(filenames):
+    for banner in helpers.iterate_files(filenames):
         row = ''
 
         # Validate the banner against any provided filters
@@ -602,7 +522,7 @@ def parse(color, fields, filters, filename, separator, filenames):
 
         # Append the data
         if fout:
-            fout.write(simplejson.dumps(banner) + '\n')
+            helpers.write_banner(fout, banner)
 
         # Loop over all the fields and print the banner as a row
         for field in fields:
@@ -638,7 +558,7 @@ def myip():
     api = shodan.Shodan(key)
     try:
         click.echo(api.tools.myip())
-    except shodan.APIError, e:
+    except shodan.APIError as e:
         raise click.ClickException(e.value)
 
 
@@ -673,7 +593,7 @@ def scan_internet(quiet, port, protocol):
             # Create the output file
             filename = '{0}-{1}.json.gz'.format(port, protocol)
             counter = 0
-            with gzip.open(filename, 'w') as fout:
+            with helpers.open_file(filename, 'w') as fout:
                 click.echo('Saving results to file: {0}'.format(filename))
 
                 # Start listening for results
@@ -683,18 +603,18 @@ def scan_internet(quiet, port, protocol):
                 click.echo('Waiting for data, please stand by...')
                 while not done:
                     try:
-                        for banner in api.stream.ports([port], timeout=30):
+                        for banner in api.stream.ports([port], timeout=90):
                             counter += 1
-                            fout.write(simplejson.dumps(banner) + '\n')
+                            helpers.write_banner(fout, banner)
 
                             if not quiet:
                                 click.echo('{0:<40} {1:<20} {2}'.format(
-                                        click.style(get_ip(banner), fg=COLORIZE_FIELDS['ip_str']),
+                                        click.style(helpers.get_ip(banner), fg=COLORIZE_FIELDS['ip_str']),
                                         click.style(str(banner['port']), fg=COLORIZE_FIELDS['port']),
                                         ';'.join(banner['hostnames'])
                                     )
                                 )
-                    except shodan.APIError, e:
+                    except shodan.APIError as e:
                         # We stop waiting for results if the scan has been processed by the crawlers and
                         # there haven't been new results in a while
                         if done:
@@ -703,7 +623,7 @@ def scan_internet(quiet, port, protocol):
                         scan = api.scan_status(scan['id'])
                         if scan['status'] == 'DONE':
                             done = True
-                    except socket.timeout, e:
+                    except socket.timeout as e:
                         # We stop waiting for results if the scan has been processed by the crawlers and
                         # there haven't been new results in a while
                         if done:
@@ -712,10 +632,10 @@ def scan_internet(quiet, port, protocol):
                         scan = api.scan_status(scan['id'])
                         if scan['status'] == 'DONE':
                             done = True
-                    except Exception, e:
+                    except Exception as e:
                         raise click.ClickException(repr(e))
             click.echo('Scan finished: {0} devices found'.format(counter))
-    except shodan.APIError, e:
+    except shodan.APIError as e:
         raise click.ClickException(e.value)
 
 
@@ -727,17 +647,19 @@ def scan_protocols():
     try:
         protocols = api.protocols()
 
-        for name, description in protocols.iteritems():
+        for name, description in iter(protocols.items()):
             click.echo(click.style('{0:<30}'.format(name), fg='cyan') + description)
-    except shodan.APIError, e:
+    except shodan.APIError as e:
         raise click.ClickException(e.value)
 
 
 @scan.command(name='submit')
 @click.option('--wait', help='How long to wait for results to come back. If this is set to "0" or below return immediately.', default=20, type=int)
 @click.option('--filename', help='Save the results in the given file.', default='', type=str)
+@click.option('--force', default=False, is_flag=True)
+@click.option('--verbose', default=False, is_flag=True)
 @click.argument('netblocks', metavar='<ip address>', nargs=-1)
-def scan_submit(wait, filename, netblocks):
+def scan_submit(wait, filename, force, verbose, netblocks):
     """Scan an IP/ netblock using Shodan."""
     key = get_api_key()
     api = shodan.Shodan(key)
@@ -746,12 +668,15 @@ def scan_submit(wait, filename, netblocks):
     # Submit the IPs for scanning
     try:
         # Submit the scan
-        scan = api.scan(netblocks)
+        scan = api.scan(netblocks, force=force)
 
         now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
 
         click.echo('')
-        click.echo('Starting Shodan scan at {} ({} scan credits left)'.format(now, scan['credits_left']))
+        click.echo('Starting Shodan scan at {} - {} scan credits left'.format(now, scan['credits_left']))
+
+        if verbose:
+            click.echo('# Scan ID: {}'.format(scan['id']))
 
         # Return immediately
         if wait <= 0:
@@ -767,7 +692,7 @@ def scan_submit(wait, filename, netblocks):
                 # Add the appropriate extension if it's not there atm
                 if not filename.endswith('.json.gz'):
                     filename += '.json.gz'
-                fout = gzip.open(filename, 'w')
+                fout = helpers.open_file(filename, 'w')
 
             # Start a spinner
             finished_event = threading.Event()
@@ -789,17 +714,21 @@ def scan_submit(wait, filename, netblocks):
                         # Don't show duplicate banners
                         cache_key = '{}:{}'.format(ip, banner['port'])
                         if cache_key not in cache:
-                            hosts[get_ip(banner)][banner['port']] = banner
+                            hosts[helpers.get_ip(banner)][banner['port']] = banner
                             cache[cache_key] = True
 
                         # If we've grabbed data for more than 60 seconds it might just be a busy network and we should move on
                         if time.time() - scan_start >= 60:
                             scan = api.scan_status(scan['id'])
+
+                            if verbose:
+                                click.echo('# Scan status: {}'.format(scan['status']))
+
                             if scan['status'] == 'DONE':
                                 done = True
                                 break
 
-                except shodan.APIError, e:
+                except shodan.APIError as e:
                     # If the connection timed out before the timeout, that means the streaming server
                     # that the user tried to reach is down. In that case, lets wait briefly and try
                     # to connect again!
@@ -814,7 +743,10 @@ def scan_submit(wait, filename, netblocks):
                     scan = api.scan_status(scan['id'])
                     if scan['status'] == 'DONE':
                         done = True
-                except socket.timeout, e:
+
+                    if verbose:
+                        click.echo('# Scan status: {}'.format(scan['status']))
+                except socket.timeout as e:
                     # If the connection timed out before the timeout, that means the streaming server
                     # that the user tried to reach is down. In that case, lets wait a second and try
                     # to connect again!
@@ -822,7 +754,7 @@ def scan_submit(wait, filename, netblocks):
                         continue
 
                     done = True
-                except Exception, e:
+                except Exception as e:
                     finished_event.set()
                     progress_bar_thread.join()
                     raise click.ClickException(repr(e))
@@ -862,7 +794,7 @@ def scan_submit(wait, filename, netblocks):
                 click.echo('\b ')
 
                 for ip in sorted(hosts):
-                    host = hosts[ip].items()[0][1]
+                    host = next(iter(hosts[ip].items()))[1]
 
                     click.echo(click.style(ip, fg='cyan'), nl=False)
                     if 'hostnames' in host and host['hostnames']:
@@ -906,18 +838,31 @@ def scan_submit(wait, filename, netblocks):
 
                         # Save the banner in a file if necessary
                         if fout:
-                            fout.write(simplejson.dumps(hosts[ip][port]) + '\n')
+                            helpers.write_banner(fout, hosts[ip][port])
 
                     click.echo('')
             else:
                 # Prepend a \b to remove the spinner
                 click.echo('\bNo open ports found or the host has been recently crawled and cant get scanned again so soon.')
-    except shodan.APIError, e:
+    except shodan.APIError as e:
         raise click.ClickException(e.value)
     finally:
         # Remove any alert
         if alert:
             api.delete_alert(alert['id'])
+
+
+@scan.command(name='status')
+@click.argument('scan_id', type=str)
+def scan_status(scan_id):
+    """Check the status of an on-demand scan."""
+    key = get_api_key()
+    api = shodan.Shodan(key)
+    try:
+        scan = api.scan_status(scan_id)
+        click.echo(scan['status'])
+    except shodan.APIError as e:
+        raise click.ClickException(e.value)
 
 
 @main.command()
@@ -951,7 +896,7 @@ def search(color, fields, limit, separator, query):
     api = shodan.Shodan(key)
     try:
         results = api.search(query, limit=limit)
-    except shodan.APIError, e:
+    except shodan.APIError as e:
         raise click.ClickException(e.value)
 
     # We buffer the entire output so we can use click's pager functionality
@@ -990,8 +935,9 @@ def search(color, fields, limit, separator, query):
 @main.command()
 @click.option('--limit', help='The number of results to return.', default=10, type=int)
 @click.option('--facets', help='List of facets to get statistics for.', default='country,org')
+@click.option('--filename', '-O', help='Save the results in a CSV file of the provided name.', default=None)
 @click.argument('query', metavar='<search query>', nargs=-1)
-def stats(limit, facets, query):
+def stats(limit, facets, filename, query):
     """Provide summary information about a search query"""
     # Setup Shodan
     key = get_api_key()
@@ -1011,18 +957,71 @@ def stats(limit, facets, query):
     api = shodan.Shodan(key)
     try:
         results = api.count(query, facets=facets)
-    except shodan.APIError, e:
+    except shodan.APIError as e:
         raise click.ClickException(e.value)
 
     # Print the stats tables
     for facet in results['facets']:
-        click.echo('Top {} Results for Facet: {}'.format(limit, facet))
+        click.echo('Top {} Results for Facet: {}'.format(len(results['facets'][facet]), facet))
 
         for item in results['facets'][facet]:
-            click.echo(click.style('{:28s}'.format(str(item['value']).encode('ascii', errors='replace')), fg='cyan'), nl=False)
+            value = item['value']
+            if isinstance(value, basestring):
+                value = value.encode('ascii', errors='replace').decode('ascii')
+            else:
+                value = str(value)
+
+            click.echo(click.style('{:28s}'.format(value), fg='cyan'), nl=False)
             click.echo(click.style('{:12,d}'.format(item['count']), fg='green'))
 
         click.echo('')
+
+    # Create the output file if requested
+    fout = None
+    if filename:
+        if not filename.endswith('.csv'):
+            filename += '.csv'
+        fout = open(filename, 'w')
+        writer = csv.writer(fout, dialect=csv.excel)
+
+        # Write the header
+        writer.writerow(['Query', query])
+
+        # Add an empty line to separate rows
+        writer.writerow([])
+
+        # Write the header that contains the facets
+        row = []
+        for facet in results['facets']:
+            row.append(facet)
+            row.append('')
+        writer.writerow(row)
+
+        # Every facet has 2 columns (key, value)
+        counter = 0
+        has_items = True
+        while has_items:
+            row = ['' for i in range(len(results['facets']) * 2)]
+
+            pos = 0
+            has_items = False
+            for facet in results['facets']:
+                values = results['facets'][facet]
+
+                # Add the values for the facet into the current row
+                if len(values) > counter:
+                    has_items = True
+                    row[pos] = values[counter]['value']
+                    row[pos+1] = values[counter]['count']
+
+                pos += 2
+
+            # Write out the row
+            if has_items:
+                writer.writerow(row)
+
+            # Move to the next row of values
+            counter += 1
 
 
 @main.command()
@@ -1033,10 +1032,14 @@ def stats(limit, facets, query):
 @click.option('--datadir', help='Save the stream data into the specified directory as .json.gz files.', default=None, type=str)
 @click.option('--ports', help='A comma-separated list of ports to grab data on.', default=None, type=str)
 @click.option('--quiet', help='Disable the printing of information to the screen.', is_flag=True)
-@click.option('--timeout', help='Timeout. Should the shodan stream cease to send data, then timeout after <timeout> seconds.', default=5, type=int)
+@click.option('--timeout', help='Timeout. Should the shodan stream cease to send data, then timeout after <timeout> seconds.', default=0, type=int)
 @click.option('--streamer', help='Specify a custom Shodan stream server to use for grabbing data.', default='https://stream.shodan.io', type=str)
 @click.option('--pipe',  help='Specify the path of the named pipe to which shodan should send the JSON data to in addition to writing to the data directory.', default=None, type=str)
-def stream(color, fields, separator, limit, datadir, ports, quiet, timeout, streamer, pipe):
+@click.option('--countries', help='A comma-separated list of countries to grab data on.', default=None, type=str)
+@click.option('--asn', help='A comma-separated list of ASNs to grab data on.', default=None, type=str)
+@click.option('--alert', help='The network alert ID or "all" to subscribe to all network alerts on your account.', default=None, type=str)
+@click.option('--compresslevel', help='The gzip compression level (0-9; 0 = no compression, 9 = most compression', default=9, type=int)
+def stream(color, fields, separator, limit, datadir, ports, quiet, timeout, streamer, pipe, countries,  asn, alert, compresslevel):
     """Stream data in real-time."""
     # Setup the Shodan API
     key = get_api_key()
@@ -1050,25 +1053,70 @@ def stream(color, fields, separator, limit, datadir, ports, quiet, timeout, stre
 
     # create named pipe if given on the command line
     if (pipe and not os.path.exists(pipe)):
-        os.mkfifo(pipe) 
+        os.mkfifo(pipe)
     if (pipe):
         pipeout = os.open(pipe, os.O_WRONLY)
 
     if len(fields) == 0:
         raise click.ClickException('Please define at least one property to show')
 
+    # The user must choose "ports", "countries", "asn" or nothing - can't select multiple
+    # filtered streams at once.
+    stream_type = []
+    if ports:
+        stream_type.append('ports')
+    if countries:
+        stream_type.append('countries')
+    if asn:
+        stream_type.append('asn')
+    if alert:
+        stream_type.append('alert')
+
+    if len(stream_type) > 1:
+        raise click.ClickException('Please use --ports, --countries OR --asn. You cant subscribe to multiple filtered streams at once.')
+
+    stream_args = None
+
     # Turn the list of ports into integers
     if ports:
         try:
-            ports = [int(item.strip()) for item in ports.split(',')]
+            stream_args = [int(item.strip()) for item in ports.split(',')]
         except:
             raise click.ClickException('Invalid list of ports')
 
-    # Decide which stream to subscribe to based on whether or not ports were selected
-    if ports:
-        stream = api.stream.ports(ports, timeout=timeout)
+    if alert:
+        alert = alert.strip()
+        if alert.lower() != 'all':
+            stream_args = alert
+
+    if asn:
+        stream_args = asn.split(',')
+
+    if countries:
+        stream_args = countries.split(',')
+
+    # Flatten the list of stream types
+    # Possible values are:
+    # - all
+    # - asn
+    # - countries
+    # - ports
+    if len(stream_type) == 1:
+        stream_type = stream_type[0]
     else:
-        stream = api.stream.banners(timeout=timeout)
+        stream_type = 'all'
+
+    # Decide which stream to subscribe to based on whether or not ports were selected
+    def _create_stream(name, args, timeout):
+        return {
+            'all': api.stream.banners(timeout=timeout),
+            'alert': api.stream.alert(args, timeout=timeout),
+            'asn': api.stream.asn(args, timeout=timeout),
+            'countries': api.stream.countries(args, timeout=timeout),
+            'ports': api.stream.ports(args, timeout=timeout),
+        }.get(name, 'all')
+
+    stream = _create_stream(stream_type, stream_args, timeout=timeout)
 
     counter = 0
     quit = False
@@ -1076,14 +1124,14 @@ def stream(color, fields, separator, limit, datadir, ports, quiet, timeout, stre
     fout = None
 
     if datadir:
-        fout = open_file(datadir, last_time)
+        fout = open_streaming_file(datadir, last_time, compresslevel)
         fout.write('[\n')
     if pipe:
         try:
             os.write(pipeout, '[\n')
         except IOError, e:
             if e.errno == errno.EPIPE:
-                 pipeout = os.open(pipe, os.O_WRONLY) # simply re-open the pipe 
+                 pipeout = os.open(pipe, os.O_WRONLY) # simply re-open the pipe
 
     while not quit:
         try:
@@ -1103,15 +1151,16 @@ def stream(color, fields, separator, limit, datadir, ports, quiet, timeout, stre
                             last_time = cur_time
                             fout.write('{ "_file_closed_at": "%s" } ]' %cur_time )
                             fout.close()
-                            fout = open_file(datadir, last_time)
+                            fout = open_streaming_file(datadir, last_time)
                             fout.write('[\n')
-                    fout.write(simplejson.dumps(banner) + ',\n')
+                    helpers.write_banner(fout, banner)
+                    fout.write(',\n')
                     if pipe:
                         try:
                             os.write(pipeout, simplejson.dumps(banner) + ',\n')
                         except IOError, e:
                             if e.errno == errno.EPIPE:
-                                 pipeout = os.open(pipe, os.O_WRONLY) # simply re-open the pipe 
+                                 pipeout = os.open(pipe, os.O_WRONLY) # simply re-open the pipe
 
 
                 # Print the banner information to stdout
@@ -1121,16 +1170,17 @@ def stream(color, fields, separator, limit, datadir, ports, quiet, timeout, stre
                     # Loop over all the fields and print the banner as a row
                     for field in fields:
                         tmp = ''
-                        if field in banner and banner[field]:
-                            field_type = type(banner[field])
+                        value = get_banner_field(banner, field)
+                        if value:
+                            field_type = type(value)
 
                             # If the field is an array then merge it together
                             if field_type == list:
-                                tmp = ';'.join(banner[field])
+                                tmp = ';'.join(value)
                             elif field_type in [int, float]:
-                                tmp = str(banner[field])
+                                tmp = str(value)
                             else:
-                                tmp = escape_data(banner[field])
+                                tmp = escape_data(value)
 
                             # Colorize certain fields if the user wants it
                             if color:
@@ -1143,29 +1193,55 @@ def stream(color, fields, separator, limit, datadir, ports, quiet, timeout, stre
                     click.echo(row)
         except requests.exceptions.Timeout:
             raise click.ClickException('Connection timed out')
-            # let some exteran while $TRUE script handle the reconnects XXX FIXME : should be improved
         except KeyboardInterrupt:
             quit = True
+        except shodan.APIError as e:
+            raise click.ClickException(e.value)
         except:
-            # For other errors lets just wait a few seconds and try to reconnect again
+            # For other errors lets just wait a bit and try to reconnect again
             # XXX FIXME: this does not seem to reconnect since it's in the while not quit loop!
             quit = True
-            #time.sleep(2)
+            #time.sleep(1)
+
+            # Create a new stream object to subscribe to
+            stream = _create_stream(stream_type, stream_args, timeout=timeout)
+
     if pipe:
         try:
             os.write(pipeout, '{ "_file_closed_at": "%s" } ]' %cur_time )
         except IOError, e:
             if e.errno == errno.EPIPE:
-                 pipeout = os.open(pipe, os.O_WRONLY) # simply re-open the pipe 
+                 pipeout = os.open(pipe, os.O_WRONLY) # simply re-open the pipe
             else:
                 print ("got an IOError: %s" %e)
         #os.close(pipeout)
 
 
+@main.command()
+@click.argument('ip', metavar='<IP address>')
+def honeyscore(ip):
+    """Check whether the IP is a honeypot or not."""
+    key = get_api_key()
+    api = shodan.Shodan(key)
+
+    try:
+        score = api.labs.honeyscore(ip)
+
+        if score == 1.0:
+            click.echo(click.style('Honeypot detected', fg='red'))
+        elif score > 0.5:
+            click.echo(click.style('Probably a honeypot', fg='yellow'))
+        else:
+            click.echo(click.style('Not a honeypot', fg='green'))
+
+        click.echo('Score: {}'.format(score))
+    except:
+        click.ClickException('Unable to calculate honeyscore')
+
 def async_spinner(finished):
     spinner = itertools.cycle(['-', '/', '|', '\\'])
     while not finished.is_set():
-        sys.stdout.write('\b{}'.format(spinner.next()))
+        sys.stdout.write('\b{}'.format(next(spinner)))
         sys.stdout.flush()
         finished.wait(0.2)
 

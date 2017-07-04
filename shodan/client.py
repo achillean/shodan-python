@@ -1,21 +1,20 @@
 # -*- coding: utf-8 -*-
-
 """
 shodan.client
 ~~~~~~~~~~~~~
 
 This module implements the Shodan API.
 
-:copyright: (c) 2014-2015 by John Matherly
+:copyright: (c) 2014- by John Matherly
 """
-
-import requests
-import simplejson
 import time
 
-import shodan.exception as exception
-import shodan.helpers as helpers
-import shodan.stream as stream
+import requests
+import json
+
+from .exception import APIError
+from .helpers import api_request, create_facet_string
+from .stream import Stream
 
 
 # Try to disable the SSL warnings in urllib3 since not everybody can install
@@ -28,6 +27,12 @@ try:
     requests.packages.urllib3.disable_warnings()
 except:
     pass
+
+# Define a basestring type if necessary for Python3 compatibility
+try:
+    basestring
+except NameError:
+    basestring = str
 
 
 class Shodan:
@@ -73,8 +78,7 @@ class Shodan:
                 'page': page,
             }
             if facets:
-                facet_str = helpers.create_facet_string(facets)
-                query_args['facets'] = facet_str
+                query_args['facets'] = create_facet_string(facets)
 
             return self.parent._request('/api/search', query_args, service='exploits')
             
@@ -93,10 +97,24 @@ class Shodan:
                 'query': query,
             }
             if facets:
-                facet_str = helpers.create_facet_string(facets)
-                query_args['facets'] = facet_str
+                query_args['facets'] = create_facet_string(facets)
 
             return self.parent._request('/api/count', query_args, service='exploits')
+    
+    class Labs:
+
+        def __init__(self, parent):
+            self.parent = parent
+
+        def honeyscore(self, ip):
+            """Calculate the probability of an IP being an ICS honeypot.
+            
+            :param ip: IP address of the device
+            :type ip: str
+
+            :returns: int -- honeyscore ranging from 0.0 to 1.0
+            """
+            return self.parent._request('/labs/honeyscore/{}'.format(ip), {})
     
     def __init__(self, key):
         """Initializes the API object.
@@ -108,9 +126,11 @@ class Shodan:
         self.base_url = 'https://api.shodan.io'
         self.base_exploits_url = 'https://exploits.shodan.io'
         self.exploits = self.Exploits(self)
+        self.labs = self.Labs(self)
         self.tools = self.Tools(self)
-        self.stream = stream.Stream(key)
-    
+        self.stream = Stream(key)
+        self._session = requests.Session()
+            
     def _request(self, function, params, service='shodan', method='get'):
         """General-purpose function to create web requests to SHODAN.
         
@@ -134,29 +154,31 @@ class Shodan:
         # Send the request
         try:
             if method.lower() == 'post':
-                data = requests.post(base_url + function, params)
+                data = self._session.post(base_url + function, params)
             else:
-                data = requests.get(base_url + function, params=params)
+                data = self._session.get(base_url + function, params=params)
         except:
-            raise exception.APIError('Unable to connect to Shodan')
+            raise APIError('Unable to connect to Shodan')
 
         # Check that the API key wasn't rejected
         if data.status_code == 401:
             try:
-                raise exception.APIError(data.json()['error'])
-            except:
-                pass
-            raise exception.APIError('Invalid API key')
+                # Return the actual error message if the API returned valid JSON
+                error = data.json()['error']
+            except Exception as e:
+                error = 'Invalid API key'
+            
+            raise APIError(error)
         
         # Parse the text into JSON
         try:
             data = data.json()
         except:
-            raise exception.APIError('Unable to parse JSON response')
+            raise APIError('Unable to parse JSON response')
         
         # Raise an exception if an error occurred
-        if type(data) == dict and data.get('error', None):
-            raise exception.APIError(data['error'])
+        if type(data) == dict and 'error' in data:
+            raise APIError(data['error'])
         
         # Return the data
         return data
@@ -175,22 +197,28 @@ class Shodan:
             'query': query,
         }
         if facets:
-            facet_str = helpers.create_facet_string(facets)
-            query_args['facets'] = facet_str
+            query_args['facets'] = create_facet_string(facets)
         return self._request('/shodan/host/count', query_args)
     
-    def host(self, ip, history=False):
+    def host(self, ips, history=False, minify=False):
         """Get all available information on an IP.
 
         :param ip: IP of the computer
         :type ip: str
         :param history: (optional) True if you want to grab the historical (non-current) banners for the host, False otherwise.
         :type history: bool
+        :param minify: (optional) True to only return the list of ports and the general host information, no banners, False otherwise.
+        :type minify: bool
         """
+        if isinstance(ips, basestring):
+            ips = [ips]
+        
         params = {}
         if history:
             params['history'] = history
-        return self._request('/shodan/host/%s' % ip, params)
+        if minify:
+            params['minify'] = minify
+        return self._request('/shodan/host/%s' % ','.join(ips), params)
     
     def info(self):
         """Returns information about the current API key, such as a list of add-ons
@@ -212,19 +240,36 @@ class Shodan:
         """
         return self._request('/shodan/protocols', {})
 
-    def scan(self, ips):
+    def scan(self, ips, force=False):
         """Scan a network using Shodan
 
-        :param ips: A list of IPs or netblocks in CIDR notation
-        :type ips: str
+        :param ips: A list of IPs or netblocks in CIDR notation or an object structured like:
+                    {
+                        "9.9.9.9": [
+                            (443, "https"),
+                            (8080, "http")
+                        ],
+                        "1.1.1.0/24": [
+                            (503, "modbus")
+                        ]
+                    }
+        :type ips: str or dict
+        :param force: Whether or not to force Shodan to re-scan the provided IPs. Only available to enterprise users.
+        :type force: bool
 
         :returns: A dictionary with a unique ID to check on the scan progress, the number of IPs that will be crawled and how many scan credits are left.
         """
         if isinstance(ips, basestring):
             ips = [ips]
+        
+        if isinstance(ips, dict):
+            networks = json.dumps(ips)
+        else:
+            networks = ','.join(ips)
 
         params = {
-            'ips': ','.join(ips),
+            'ips': networks,
+            'force': force,
         }
 
         return self._request('/shodan/scan', params, method='post')
@@ -286,8 +331,7 @@ class Shodan:
             args['page'] = page
 
         if facets:
-            facet_str = helpers.create_facet_string(facets)
-            args['facets'] = facet_str
+            args['facets'] = create_facet_string(facets)
         
         return self._request('/shodan/host/search', args)
     
@@ -417,7 +461,7 @@ class Shodan:
             'expires': expires,
         }
 
-        response = helpers.api_request(self.api_key, '/shodan/alert', data=data, params={}, method='post')
+        response = api_request(self.api_key, '/shodan/alert', data=data, params={}, method='post')
 
         return response
 
@@ -428,7 +472,7 @@ class Shodan:
         else:
             func = '/shodan/alert/info'
 
-        response = helpers.api_request(self.api_key, func, params={
+        response = api_request(self.api_key, func, params={
             'include_expired': include_expired,
             })
 
@@ -438,7 +482,7 @@ class Shodan:
         """Delete the alert with the given ID."""
         func = '/shodan/alert/%s' % aid
 
-        response = helpers.api_request(self.api_key, func, params={}, method='delete')
+        response = api_request(self.api_key, func, params={}, method='delete')
 
         return response
 

@@ -1,6 +1,8 @@
 import requests
-import simplejson
-from .client import APIError
+import json
+
+from .exception import APIError
+
 
 class Threatnet:
     """Wrapper around the Threatnet REST and Streaming APIs
@@ -35,21 +37,21 @@ class Threatnet:
             stream = self._create_stream('/threatnet/events')
             for line in stream.iter_lines():
                 if line:
-                    banner = simplejson.loads(line)
+                    banner = json.loads(line)
                     yield banner
 
         def backscatter(self):
             stream = self._create_stream('/threatnet/backscatter')
             for line in stream.iter_lines():
                 if line:
-                    banner = simplejson.loads(line)
+                    banner = json.loads(line)
                     yield banner
 
         def activity(self):
             stream = self._create_stream('/threatnet/ssh')
             for line in stream.iter_lines():
                 if line:
-                    banner = simplejson.loads(line)
+                    banner = json.loads(line)
                     yield banner
     
     def __init__(self, key):

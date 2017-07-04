@@ -26,6 +26,7 @@ Examples
     examples/basic-search
     examples/query-summary
     examples/cert-stream
+    examples/gifcreator
 
 API Reference
 ~~~~~~~~~~~~~

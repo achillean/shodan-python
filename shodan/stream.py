@@ -14,7 +14,7 @@ class Stream:
 
     def _create_stream(self, name, timeout=None):
         # The user doesn't want to use a timeout
-        if timeout <= 0:
+        if timeout and timeout <= 0:
             timeout = None
         
         try:

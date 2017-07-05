@@ -6,7 +6,7 @@ dependencies = open('requirements.txt', 'r').read().split('\n')
 
 setup(
     name = 'shodan',
-    version = '1.7.1',
+    version = '1.7.2',
     description = 'Python library and command-line utility for Shodan (https://developer.shodan.io)',
     author = 'John Matherly',
     author_email = 'jmath@shodan.io',
@@ -14,6 +14,7 @@ setup(
     packages = ['shodan', 'shodan.cli', 'shodan.cli.converter'],
     scripts = ['bin/shodan'],
     install_requires = dependencies,
+    keywords = ['security', 'network'],
     classifiers = [
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',

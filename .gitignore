@@ -8,3 +8,4 @@ shodan.egg-info/*
 tmp/*
 MANIFEST
 .vscode/
+PKG-INFO

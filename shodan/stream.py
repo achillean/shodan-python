@@ -31,10 +31,12 @@ class Stream:
             except Exception as e:
                 pass
             raise APIError('Invalid API key or you do not have access to the Streaming API')
+        if req.encoding is None:
+            req.encoding = 'utf-8'
         return req
 
     def _iter_stream(self, stream, raw):
-        for line in stream.iter_lines():
+        for line in stream.iter_lines(decode_unicode=True):
             if line:
                 if raw:
                     yield line

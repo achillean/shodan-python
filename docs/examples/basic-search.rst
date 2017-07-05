@@ -32,6 +32,6 @@ Basic Shodan Search
 		# Loop through the matches and print each IP
 		for service in result['matches']:
 			print service['ip_str']
-	except Exception, e:
+	except Exception as e:
 		print 'Error: %s' % e
 		sys.exit(1)

@@ -1,3 +1,4 @@
 include AUTHORS
 include LICENSE
-include MANIFEST.in
+include requirements.txt
+recursive-include shodan *.py

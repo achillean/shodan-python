@@ -21,11 +21,6 @@ import time
 from shodan.helpers import get_ip
 
 
-STREAMS = {
-    'filetest': 'wm3stream.json',
-    'wm3': 'http://worldmap3.f-secure.com/api/stream/',
-}
-
 MAPS = {
     'world': {
         # offset (as (y, x) for curses...)

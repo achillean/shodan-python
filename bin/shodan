@@ -1202,6 +1202,16 @@ def honeyscore(ip):
     except:
         click.ClickException('Unable to calculate honeyscore')
 
+
+@main.command()
+def radar():
+    """Check whether the IP is a honeypot or not."""
+    key = get_api_key()
+    api = shodan.Shodan(key)
+
+    from shodan.cli.worldmap import launch_map
+    launch_map(api)
+
 def async_spinner(finished):
     spinner = itertools.cycle(['-', '/', '|', '\\'])
     while not finished.is_set():

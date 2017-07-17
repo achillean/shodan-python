@@ -14,13 +14,11 @@ ASCII map in map-world-01.txt is copyright:
 
 '''
 import curses
-import json
 import locale
-import os
 import random
-import sys
 import time
-import urllib2
+
+from shodan.helpers import get_ip
 
 
 STREAMS = {
@@ -34,7 +32,31 @@ MAPS = {
         'corners': (1, 4, 23, 73),
         # lat top, lon left, lat bottom, lon right
         'coords': [90.0, -180.0, -90.0, 180.0],
-        'file': 'map-world-01.txt',
+        'data': '''
+               . _..::__:  ,-"-"._       |7       ,     _,.__             
+       _.___ _ _<_>`!(._`.`-.    /        _._     `_ ,_/  '  '-._.---.-.__
+     .{     " " `-==,',._\{  \  / {)     / _ ">_,-' `                mt-2_
+      \_.:--.       `._ )`^-. "'      , [_/(                       __,/-' 
+     '"'     \         "    _L       oD_,--'                )     /. (|   
+              |           ,'         _)_.\\._<> 6              _,' /  '   
+              `.         /          [_/_'` `"(                <'}  )      
+               \\    .-. )          /   `-'"..' `:._          _)  '       
+        `        \  (  `(          /         `:\  > \  ,-^.  /' '         
+                  `._,   ""        |           \`'   \|   ?_)  {\         
+                     `=.---.       `._._       ,'     "`  |' ,- '.        
+                       |    `-._        |     /          `:`<_|h--._      
+                       (        >       .     | ,          `=.__.`-'\     
+                        `.     /        |     |{|              ,-.,\     .
+                         |   ,'          \   / `'            ,"     \     
+                         |  /             |_'                |  __  /     
+                         | |                                 '-'  `-'   \.
+                         |/                                        "    / 
+                         \.                                            '  
+                                                                          
+                          ,/           ______._.--._ _..---.---------._   
+         ,-----"-..?----_/ )      _,-'"             "                  (  
+    Map 1998 Matthew Thomas. Freely usable as long as this line is included
+'''
     }
 }
 
@@ -46,8 +68,7 @@ class AsciiMap(object):
     def __init__(self, map_name='world', map_conf=None, window=None, encoding=None):
         if map_conf is None:
             map_conf = MAPS[map_name]
-        with open(map_conf['file'], 'rb') as mapf:
-            self.map = mapf.read()
+        self.map = map_conf['data']
         self.coords = map_conf['coords']
         self.corners = map_conf['corners']
         if window is None:
@@ -101,35 +122,22 @@ class AsciiMap(object):
     def set_data(self, data):
         """
         Set / convert internal data.
-        For now it just selects a random set to show (good enough for demo purposes)
-        TODO: could use deque to show all entries
+        For now it just selects a random set to show.
         """
         entries = []
-        formats = [
-            u"{name} / {country} {city}",
-            u"{name} / {country}",
-            u"{name}",
-            u"{type}",
-        ]
-        dets = data.get('detections', [])
-        for det in random.sample(dets, min(len(dets), 5)):
-            #"city": "Montoire-sur-le-loir",
-            #"country": "FR",
-            #"lat": "47.7500",
-            #"long": "0.8667",
-            #"name": "Trojan.Generic.7555308",
-            #"type": "Trojan"
-            desc = "Detection"
-            # keeping it unicode here, encode() for curses later on
-            for fmt in formats:
-                try:
-                    desc = fmt.format(**det)
-                    break
-                except StandardError:
-                    pass
+
+        # Grab 5 random banners to display
+        for banner in random.sample(data, min(len(data), 5)):
+            desc = '{} -> {} / {}'.format(get_ip(banner), banner['port'], banner['location']['country_code'])
+            if banner['location']['city']:
+                desc += ' {}'.format(banner['location']['city'])
+            
+            if 'tags' in banner and banner['tags']:
+                desc += ' / {}'.format(','.join(banner['tags']))
+            
             entry = (
-                float(det['lat']),
-                float(det['long']),
+                float(banner['location']['latitude']),
+                float(banner['location']['longitude']),
                 '*',
                 desc,
                 curses.A_BOLD,
@@ -137,24 +145,16 @@ class AsciiMap(object):
             )
             entries.append(entry)
         self.data = entries
-        # for debugging... maybe it could be shown again now that we have the live stream support
-        #self.data_timestamp =  data.get('response_generated')
 
     def draw(self, target):
         """ Draw internal data to curses window """
         self.window.clear()
         self.window.addstr(0, 0, self.map)
-        debugdata = [
-            (60.16, 24.94, '*', self.data_timestamp, curses.A_BOLD, 'blue'), # Helsinki
-            #(90, -180, '1', 'top left', curses.A_BOLD, 'blue'),
-            #(-90, -180, '2', 'bottom left', curses.A_BOLD, 'blue'),
-            #(90, 180, '3', 'top right', curses.A_BOLD, 'blue'),
-            #(-90, 180, '4', 'bottom right', curses.A_BOLD, 'blue'),
-        ]
+
         # FIXME: position to be defined in map config?
         row = self.corners[2]-6
         items_to_show = 5
-        for lat, lon, char, desc, attrs, color in debugdata + self.data:
+        for lat, lon, char, desc, attrs, color in self.data:
             # to make this work almost everywhere. see http://docs.python.org/2/library/curses.html
             if desc:
                 desc = desc.encode(self.encoding, 'ignore')
@@ -183,11 +183,12 @@ class AsciiMap(object):
 
 class MapApp(object):
     """ Virus World Map ncurses application """
-    def __init__(self, api_key):
-        self.api_key = api_key
+    def __init__(self, api):
+        self.api = api
         self.data = None
         self.last_fetch = 0
         self.sleep = 10  # tenths of seconds, for curses.halfdelay()
+        self.polling_interval = 60
 
     def fetch_data(self, epoch_now, force_refresh=False):
         """ (Re)fetch data from JSON stream """
@@ -195,20 +196,22 @@ class MapApp(object):
         if force_refresh or self.data is None:
             refresh = True
         else:
-            # json data usually has: "polling_interval": 120
-            try:
-                poll_interval = int(self.data['polling_interval'])
-            except (ValueError, KeyError):
-                poll_interval = 60
-            if self.last_fetch + poll_interval <= epoch_now:
+            if self.last_fetch + self.polling_interval <= epoch_now:
                 refresh = True
-
+        
         if refresh:
             try:
-                self.data = json.load(urllib2.urlopen(self.stream_url))
+                # Grab 20 banners from the main stream
+                banners = []
+                for banner in self.api.stream.banners():
+                    if 'location' in banner and banner['location']['latitude']:
+                        banners.append(banner)
+                    if len(banners) >= 20:
+                        break
+                self.data = banners
                 self.last_fetch = epoch_now
             except StandardError:
-                pass
+                raise
         return refresh
 
     def run(self, scr):
@@ -223,30 +226,11 @@ class MapApp(object):
             scr.addstr(0, 1, 'Shodan Radar', curses.A_BOLD)
             scr.addstr(0, 40, time.strftime("%c UTC", time.gmtime(now)).rjust(37), curses.A_BOLD)
 
+            # Key Input
+            # q     - Quit
             event = scr.getch()
-            if event == ord("q"):
+            if event == ord('q'):
                 break
-
-            # if in replay mode?
-            #elif event == ord('-'):
-            #    self.sleep = min(self.sleep+10, 100)
-            #    curses.halfdelay(self.sleep)
-            #elif event == ord('+'):
-            #    self.sleep = max(self.sleep-10, 10)
-            #    curses.halfdelay(self.sleep)
-
-            elif event == ord('r'):
-                # force refresh
-                refresh = True
-            elif event == ord('c'):
-                # enter config mode
-                pass
-            elif event == ord('h'):
-                # show help screen
-                pass
-            elif event == ord('m'):
-                # cycle maps
-                pass
 
             # redraw window (to fix encoding/rendering bugs and to hide other messages to same tty)
             # user pressed 'r' or new data was fetched
@@ -254,15 +238,19 @@ class MapApp(object):
                 m.window.redrawwin()
 
 
+def launch_map(api):
+    app = MapApp(api)
+    return curses.wrapper(app.run)
+
+
 def main(argv=None):
     """ Main function / entry point """
-    if argv is None:
-        argv = sys.argv[1:]
-    conf = {}
-    if len(argv):
-        conf['stream_url'] = argv[0]
-    app = MapApp(conf)
-    return curses.wrapper(app.run_curses_app)
+    from shodan import Shodan
+    from shodan.cli.helpers import get_api_key
+
+    api = Shodan(get_api_key())
+    return launch_map(api)
 
 if __name__ == '__main__':
+    import sys
     sys.exit(main())

@@ -19,7 +19,17 @@ class Stream:
             timeout = None
         
         try:
-            req = requests.get(self.base_url + name, params={'key': self.api_key}, stream=True, timeout=timeout)
+            while True:
+                req = requests.get(self.base_url + name, params={'key': self.api_key}, stream=True, timeout=timeout)
+
+                # Status code 524 is special to Cloudflare
+                # It means that no data was sent from the streaming servers which caused Cloudflare
+                # to terminate the connection.
+                #
+                # We only want to exit if there was a timeout specified or the HTTP status code is
+                # not specific to Cloudflare.
+                if req.status_code != 524 or timeout >= 0:
+                    break
         except Exception as e:
             raise APIError('Unable to contact the Shodan Streaming API')
 

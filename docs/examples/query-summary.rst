@@ -32,18 +32,18 @@ and country.
 	    'port',
 	    'asn',
 
-	    # We only care about the top 5 countries, this is how we let Shodan know to return 5 instead of the
-	    # default 10 for a facet. If you want to see more than 10, you could do ('country', 1000) for example
+	    # We only care about the top 3 countries, this is how we let Shodan know to return 3 instead of the
+	    # default 5 for a facet. If you want to see more than 5, you could do ('country', 1000) for example
 	    # to see the top 1,000 countries for a search query.
-	    ('country', 5),
+	    ('country', 3),
 	]
 
 	FACET_TITLES = {
-	    'org': 'Top 10 Organizations',
-	    'domain': 'Top 10 Domains',
-	    'port': 'Top 10 Ports',
-	    'asn': 'Top 10 Autonomous Systems',
-	    'country': 'Top 5 Countries',
+	    'org': 'Top 5 Organizations',
+	    'domain': 'Top 5 Domains',
+	    'port': 'Top 5 Ports',
+	    'asn': 'Top 5 Autonomous Systems',
+	    'country': 'Top 3 Countries',
 	}
 
 	# Input validation
@@ -89,38 +89,36 @@ and country.
 	Query: apache
 	Total Results: 34612043
 
-	Top 10 Organizations
+	Top 5 Organizations
 	Amazon.com: 808061
 	Ecommerce Corporation: 788704
 	Verio Web Hosting: 760112
 	Unified Layer: 627827
 	GoDaddy.com, LLC: 567004
 
-	Top 10 Domains
+	Top 5 Domains
 	secureserver.net: 562047
 	unifiedlayer.com: 494399
 	t-ipconnect.de: 385792
 	netart.pl: 194817
 	wanadoo.fr: 151925
 
-	Top 10 Ports
+	Top 5 Ports
 	80: 24118703
 	443: 8330932
 	8080: 1479050
 	81: 359025
 	8443: 231441
 
-	Top 10 Autonomous Systems
+	Top 5 Autonomous Systems
 	as32392: 580002
 	as2914: 465786
 	as26496: 414998
 	as48030: 332000
 	as8560: 255774
 
-	Top 5 Countries
+	Top 3 Countries
 	US: 13227366
 	DE: 2900530
 	JP: 2014506
-	CN: 1722048
-	GB: 1209938
 	"""

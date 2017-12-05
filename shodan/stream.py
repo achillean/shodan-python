@@ -46,13 +46,25 @@ class Stream:
             req.encoding = 'utf-8'
         return req
 
-    def _iter_stream(self, stream, raw):
+    def _iter_stream(self, stream, raw, timeout=None):
         for line in stream.iter_lines(decode_unicode=True):
+            # The Streaming API sends out heartbeat messages that are newlines
+            # We want to ignore those messages since they don't contain any data
             if line:
                 if raw:
                     yield line
                 else:
                     yield json.loads(line)
+            else:
+                # If the user specified a timeout then we want to keep track of how long we've
+                # been getting heartbeat messages and exit the loop if it's been too long since
+                # we've seen any activity.
+                if timeout:
+                    # TODO: This is a placeholder for now but since the Streaming API added heartbeats it broke
+                    # the ability to use inactivity timeouts (the connection timeout still works). The timeout is
+                    # mostly needed when doing on-demand scans and wanting to temporarily consume data from a
+                    # network alert.
+                    pass
 
     def alert(self, aid=None, timeout=None, raw=False):
         if aid:

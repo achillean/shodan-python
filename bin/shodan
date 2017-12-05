@@ -302,6 +302,37 @@ def count(query):
     click.echo(results['total'])
 
 
+@main.group()
+def data():
+    """Bulk data access to Shodan"""
+    pass
+
+
+@data.command(name='list')
+@click.option('--dataset', help='See the available files in the given dataset', default=None, type=str)
+def data_list(dataset):
+    """List available datasets or the files within those datasets."""
+    # Setup the API connection
+    key = get_api_key()
+    api = shodan.Shodan(key)
+
+    if dataset:
+        # Show the files within this dataset
+        files = api.data.list_files(dataset)
+
+        for file in files:
+            click.echo(click.style('{:20s}'.format(file['name']), fg='cyan'), nl=False)
+            click.echo(click.style('{:10s}'.format(helpers.humanize_bytes(file['size'])), fg='yellow'), nl=False)
+            click.echo('{}'.format(file['url']))
+    else:
+        # If no dataset was provided then show a list of all datasets
+        datasets = api.data.list_datasets()
+
+        for ds in datasets:
+            click.echo(click.style('{:15s}'.format(ds['name']), fg='cyan'), nl=False)
+            click.echo('{}'.format(ds['description']))
+
+
 @main.command()
 @click.option('--limit', help='The number of results you want to download. -1 to download all the data possible.', default=1000, type=int)
 @click.argument('filename', metavar='<filename>')

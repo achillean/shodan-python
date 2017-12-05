@@ -1,5 +1,5 @@
 import requests
-import simplejson
+import json
 import ssl
 
 from .exception import APIError
@@ -14,32 +14,57 @@ class Stream:
 
     def _create_stream(self, name, timeout=None):
         # The user doesn't want to use a timeout
-        if timeout <= 0:
+        # If the timeout is specified as 0 then we also don't want to have a timeout
+        if ( timeout and timeout <= 0 ) or ( timeout == 0 ):
             timeout = None
         
         try:
-            req = requests.get(self.base_url + name, params={'key': self.api_key}, stream=True, timeout=timeout)
+            while True:
+                req = requests.get(self.base_url + name, params={'key': self.api_key}, stream=True, timeout=timeout)
+
+                # Status code 524 is special to Cloudflare
+                # It means that no data was sent from the streaming servers which caused Cloudflare
+                # to terminate the connection.
+                #
+                # We only want to exit if there was a timeout specified or the HTTP status code is
+                # not specific to Cloudflare.
+                if req.status_code != 524 or timeout >= 0:
+                    break
         except Exception as e:
             raise APIError('Unable to contact the Shodan Streaming API')
 
         if req.status_code != 200:
             try:
-                data = simplejson.loads(req.text)
+                data = json.loads(req.text)
                 raise APIError(data['error'])
             except APIError as e:
                 raise
             except Exception as e:
                 pass
             raise APIError('Invalid API key or you do not have access to the Streaming API')
+        if req.encoding is None:
+            req.encoding = 'utf-8'
         return req
 
-    def _iter_stream(self, stream, raw):
-        for line in stream.iter_lines():
+    def _iter_stream(self, stream, raw, timeout=None):
+        for line in stream.iter_lines(decode_unicode=True):
+            # The Streaming API sends out heartbeat messages that are newlines
+            # We want to ignore those messages since they don't contain any data
             if line:
                 if raw:
                     yield line
                 else:
-                    yield simplejson.loads(line)
+                    yield json.loads(line)
+            else:
+                # If the user specified a timeout then we want to keep track of how long we've
+                # been getting heartbeat messages and exit the loop if it's been too long since
+                # we've seen any activity.
+                if timeout:
+                    # TODO: This is a placeholder for now but since the Streaming API added heartbeats it broke
+                    # the ability to use inactivity timeouts (the connection timeout still works). The timeout is
+                    # mostly needed when doing on-demand scans and wanting to temporarily consume data from a
+                    # network alert.
+                    pass
 
     def alert(self, aid=None, timeout=None, raw=False):
         if aid:

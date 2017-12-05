@@ -7,8 +7,7 @@ except:
     from urllib.request     import urlopen
     from urllib.parse       import urlencode
 
-# The simplejson library has better JSON-parsing than the standard library and is more often updated
-from simplejson import dumps, loads
+from json import dumps, loads
 
 from .exception import WebAPIError
 

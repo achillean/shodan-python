@@ -1,6 +1,6 @@
 import gzip
 import requests
-import simplejson
+import json
 
 from .exception import APIError
 
@@ -44,7 +44,7 @@ def api_request(key, function, params=None, data=None, base_url='https://api.sho
     while tries <= retries:
         try:
             if method.lower() == 'post':
-                data = requests.post(base_url + function, simplejson.dumps(data), params=params, headers={'content-type': 'application/json'})
+                data = requests.post(base_url + function, json.dumps(data), params=params, headers={'content-type': 'application/json'})
             elif method.lower() == 'delete':
                 data = requests.delete(base_url + function, params=params)
             else:
@@ -81,8 +81,19 @@ def api_request(key, function, params=None, data=None, base_url='https://api.sho
     return data
 
 
-def iterate_files(files):
+def iterate_files(files, fast=False):
     """Loop over all the records of the provided Shodan output file(s)."""
+    from json import loads
+    if fast:
+        # Try to use ujson for parsing JSON if it's available and the user requested faster throughput
+        # It's significantly faster at encoding/ decoding JSON but it doesn't support as
+        # many options as the standard library. As such, we're mostly interested in using it for
+        # decoding since reading/ parsing files will use up the most time.
+        try:
+            from ujson import loads
+        except:
+            pass
+    
     if isinstance(files, basestring):
         files = [files]
     
@@ -94,8 +105,11 @@ def iterate_files(files):
             fin = open(filename, 'r')
 
         for line in fin:
+            # Ensure the line has been decoded into a string to prevent errors w/ Python3
+            line = line.decode('utf-8')
+
             # Convert the JSON into a native Python object
-            banner = simplejson.loads(line)
+            banner = loads(line)
             yield banner
 
 def get_screenshot(banner):
@@ -115,5 +129,39 @@ def open_file(filename, mode='a', compresslevel=9):
 
 
 def write_banner(fout, banner):
-    line = simplejson.dumps(banner) + '\n'
+    line = json.dumps(banner) + '\n'
     fout.write(line.encode('utf-8'))
+
+
+def humanize_bytes(bytes, precision=1):
+    """Return a humanized string representation of a number of bytes.
+    >>> humanize_bytes(1)
+    '1 byte'
+    >>> humanize_bytes(1024)
+    '1.0 kB'
+    >>> humanize_bytes(1024*123)
+    '123.0 kB'
+    >>> humanize_bytes(1024*12342)
+    '12.1 MB'
+    >>> humanize_bytes(1024*12342,2)
+    '12.05 MB'
+    >>> humanize_bytes(1024*1234,2)
+    '1.21 MB'
+    >>> humanize_bytes(1024*1234*1111,2)
+    '1.31 GB'
+    >>> humanize_bytes(1024*1234*1111,1)
+    '1.3 GB'
+    """
+
+    if bytes == 1:
+        return '1 byte'
+    if bytes < 1024:
+        return '%.*f %s' % (precision, bytes, "bytes")
+    
+    suffixes = ['KB', 'MB', 'GB', 'TB', 'PB']
+    multiple = 1024.0    #.0 force float on python 2
+    for suffix in suffixes:
+        bytes /= multiple
+        if bytes < multiple:
+            return '%.*f %s' % (precision, bytes, suffix)
+    return '%.*f %s' % (precision, bytes, suffix)

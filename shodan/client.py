@@ -10,7 +10,7 @@ This module implements the Shodan API.
 import time
 
 import requests
-import simplejson
+import json
 
 from .exception import APIError
 from .helpers import api_request, create_facet_string
@@ -43,6 +43,25 @@ class Shodan:
     :ivar exploits: An instance of `shodan.Shodan.Exploits` that provides access to the Exploits REST API.
     :ivar stream: An instance of `shodan.Shodan.Stream` that provides access to the Streaming API.
     """
+    
+    class Data:
+
+        def __init__(self, parent):
+            self.parent = parent
+
+        def list_datasets(self):
+            """Returns a list of datasets that the user has permission to download.
+
+            :returns: A list of objects where every object describes a dataset
+            """
+            return self.parent._request('/shodan/data', {})
+
+        def list_files(self, dataset):
+            """Returns a list of files that belong to the given dataset.
+
+            :returns: A list of objects where each object contains a 'name', 'size', 'timestamp' and 'url'
+            """
+            return self.parent._request('/shodan/data/{}'.format(dataset), {})
     
     class Tools:
 
@@ -125,6 +144,7 @@ class Shodan:
         self.api_key = key
         self.base_url = 'https://api.shodan.io'
         self.base_exploits_url = 'https://exploits.shodan.io'
+        self.data = self.Data(self)
         self.exploits = self.Exploits(self)
         self.labs = self.Labs(self)
         self.tools = self.Tools(self)
@@ -263,7 +283,7 @@ class Shodan:
             ips = [ips]
         
         if isinstance(ips, dict):
-            networks = simplejson.dumps(ips)
+            networks = json.dumps(ips)
         else:
             networks = ','.join(ips)
 

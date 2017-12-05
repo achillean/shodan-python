@@ -1,4 +1,5 @@
 click
+click-plugins
 colorama
-requests
-simplejson
+requests>=2.2.1
+XlsxWriter

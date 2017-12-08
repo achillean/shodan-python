@@ -5,6 +5,10 @@ in development
 --------------
 * added CHANGES file
 
+1.7.7
+-----
+* Added "shodan data download" command to help download bulk data files
+
 1.7.6
 -----
 * Add basic support for the Bulk Data API

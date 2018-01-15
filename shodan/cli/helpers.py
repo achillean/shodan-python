@@ -21,5 +21,3 @@ def get_api_key():
 
     with open(keyfile, 'r') as fin:
         return fin.read().strip()
-
-    raise click.ClickException('Please run "shodan init <api key>" before using this command')

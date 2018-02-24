@@ -1295,7 +1295,7 @@ def honeyscore(ip):
 
 @main.command()
 def radar():
-    """Check whether the IP is a honeypot or not."""
+    """Real-Time Map of some results as Shodan finds them."""
     key = get_api_key()
     api = shodan.Shodan(key)
 

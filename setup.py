@@ -12,7 +12,7 @@ setup(
     author_email = 'jmath@shodan.io',
     url = 'http://github.com/achillean/shodan-python/tree/master',
     packages = ['shodan', 'shodan.cli', 'shodan.cli.converter'],
-    scripts = ['bin/shodan'],
+    entry_points = {'console_scripts': ['shodan = shodan.__main__:main']},
     install_requires = dependencies,
     keywords = ['security', 'network'],
     classifiers = [

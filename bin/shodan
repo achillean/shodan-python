@@ -489,6 +489,9 @@ def host(format, history, filename, save, ip):
         if 'org' in host and host['org']:
             click.echo('{:25s}{}'.format('Organization:', host['org']))
 
+        if 'last_update' in host and host['last_update']:
+            click.echo('{:25s}{}'.format('Updated:', host['last_update']))
+
         click.echo('{:25s}{}'.format('Number of open ports:', len(host['ports'])))
 
         # Output the vulnerabilities the host has

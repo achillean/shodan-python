@@ -11,6 +11,10 @@ Streaming API. And as a bonus it also lets you search for exploits using the Sho
 If you're not sure where to start simply go through the "Getting Started" section of the documentation and work your
 way down through the examples.
 
+For more information about Shodan and how to use the API please visit our official help center at:
+
+    https://help.shodan.io
+
 Introduction
 ~~~~~~~~~~~~
 .. toctree::

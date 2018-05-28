@@ -9,7 +9,8 @@ Features
 --------
 
 - Search Shodan
-- Streaming API support for real-time consumption of Shodan data
+- Fast IP lookups
+- Streaming API support for real-time consumption of Shodan firehose
 - Exploit search API fully implemented
 
 
@@ -32,4 +33,4 @@ Or if you don't have pip installed (which you should seriously install):
 Documentation
 -------------
 
-Documentation is available at http://shodan.readthedocs.org/.
+Documentation is available at https://shodan.readthedocs.org/ and https://help.shodan.io

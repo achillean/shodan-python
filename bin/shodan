@@ -524,7 +524,9 @@ def host(format, history, filename, save, ip):
             if 'version' in banner and banner['version']:
                 version = '({})'.format(banner['version'])
 
-            click.echo(click.style('{:>7d} '.format(banner['port']), fg='cyan'), nl=False)
+            click.echo(click.style('{:>7d}'.format(banner['port']), fg='cyan'), nl=False)
+            click.echo('/', nl=False)
+            click.echo(click.style('{} '.format(banner['transport']), fg='yellow'), nl=False)
             click.echo('{} {}'.format(product, version), nl=False)
 
             if history:

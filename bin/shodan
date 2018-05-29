@@ -42,6 +42,7 @@ import sys
 import threading
 import requests
 import time
+from dateutil import tz
 
 # The file converters that are used to go from .json.gz to various other formats
 from shodan.cli.converter import CsvConverter, KmlConverter, GeoJsonConverter, ExcelConverter, ImagesConverter
@@ -459,18 +460,32 @@ def download(limit, filename, query):
 
 
 @main.command()
+@click.option('--current', help='Show the current data only', default=False, is_flag=True)
 @click.option('--format', help='The output format for the host information. Possible values are: pretty, csv, tsv. (placeholder)', default='pretty', type=str)
 @click.option('--history', help='Show the complete history of the host.', default=False, is_flag=True)
 @click.option('--filename', '-O', help='Save the host information in the given file (append if file exists).', default=None)
 @click.option('--save', '-S', help='Save the host information in the a file named after the IP (append if file exists).', default=False, is_flag=True)
 @click.argument('ip', metavar='<ip address>')
-def host(format, history, filename, save, ip):
+def host(current, format, history, filename, save, ip):
     """View all available information for an IP address"""
     key = get_api_key()
     api = shodan.Shodan(key)
 
     try:
         host = api.host(ip, history=history)
+
+        to_zone = tz.tzlocal()
+        from_zone = tz.tzutc()
+        updated = time.strptime(host['last_update'], '%Y-%m-%dT%H:%M:%S.%f')
+        updated = datetime.datetime.fromtimestamp(time.mktime(updated))
+        updated = updated.replace(tzinfo=from_zone).astimezone(to_zone)
+        now = datetime.datetime.utcnow()
+        now = now.replace(tzinfo=from_zone).astimezone(to_zone)
+        now = now.today()
+
+        if current:
+            if updated.date() < now.date():
+                    raise click.ClickException('No information available for that IP')
 
         # General info
         click.echo(click.style(ip, fg='green'))
@@ -490,7 +505,8 @@ def host(format, history, filename, save, ip):
             click.echo('{:25s}{}'.format('Organization:', host['org']))
 
         if 'last_update' in host and host['last_update']:
-            click.echo('{:25s}{}'.format('Updated:', host['last_update']))
+            format = '%Y-%m-%d %H:%M:%S %Z (%z)'
+            click.echo('{:25s}{}'.format('Updated:', updated.strftime(format)))
 
         click.echo('{:25s}{}'.format('Number of open ports:', len(host['ports'])))
 
@@ -557,6 +573,8 @@ def host(format, history, filename, save, ip):
 
             # Show optional ssl info
             if 'ssl' in banner:
+                if 'cert' in banner['ssl'] and banner['ssl']['cert']['subject']['CN']:
+                    click.echo('\t|-- CN: {}'.format(banner['ssl']['cert']['subject']['CN']))
                 if 'versions' in banner['ssl'] and banner['ssl']['versions']:
                     click.echo('\t|-- SSL Versions: {}'.format(', '.join([version for version in sorted(banner['ssl']['versions']) if not version.startswith('-')])))
                 if 'dhparams' in banner['ssl'] and banner['ssl']['dhparams']:

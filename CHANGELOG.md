@@ -1,9 +1,13 @@
-CHANGES
-=======
+CHANGELOG
+=========
 
-in development
---------------
-* added CHANGES file
+1.8.0
+-----
+* Shodan CLI now installs properly on Windows (#66)
+* Improved output of "shodan host" (#64, #67)
+* Fixed bug that prevented an open port from being shown in "shodan host" (#63)
+* No longer show an empty page if "shodan search" didn't return results (#62)
+* Updated docs to make them Python3 compatible
 
 1.7.7
 -----

@@ -515,6 +515,26 @@ def host(format, history, filename, save, ip):
 
         click.echo('')
 
+        # If the user doesn't have access to SSL/ Telnet results then we need
+        # to pad the host['data'] property with empty banners so they still see
+        # the port listed as open. (#63)
+        if len(host['ports']) != len(host['data']):
+            # Find the ports the user can't see the data for
+            ports = host['ports']
+            for banner in host['data']:
+                if banner['port'] in ports:
+                    ports.remove(banner['port'])
+            
+            # Add the placeholder banners
+            for port in ports:
+                banner = {
+                    'port': port,
+                    'transport': 'tcp', # All the filtered services use TCP
+                    'timestamp': host['data'][-1]['timestamp'], # Use the timestamp of the oldest banner
+                    'placeholder': True, # Don't store this banner when the file is saved
+                }
+                host['data'].append(banner)
+
         click.echo('Ports:')
         for banner in sorted(host['data'], key=lambda k: k['port']):
             product = ''
@@ -558,7 +578,8 @@ def host(format, history, filename, save, ip):
             fout = helpers.open_file(filename)
 
             for banner in sorted(host['data'], key=lambda k: k['port']):
-                helpers.write_banner(fout, banner)
+                if 'placeholder' not in banner:
+                    helpers.write_banner(fout, banner)
     except shodan.APIError as e:
         raise click.ClickException(e.value)
 

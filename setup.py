@@ -3,14 +3,14 @@
 from setuptools import setup
 
 DEPENDENCIES = open('requirements.txt', 'r').read().split('\n')
-README = open('README.md', 'r').read()
+README = open('README.rst', 'r').read()
 
 setup(
     name = 'shodan',
     version = '1.8.1',
     description = 'Python library and command-line utility for Shodan (https://developer.shodan.io)',
     long_description = README,
-    long_description_content_type = 'text/markdown',
+    long_description_content_type = 'text/x-rst',
     author = 'John Matherly',
     author_email = 'jmath@shodan.io',
     url = 'http://github.com/achillean/shodan-python/tree/master',

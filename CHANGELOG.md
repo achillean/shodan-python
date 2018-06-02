@@ -1,6 +1,10 @@
 CHANGELOG
 =========
 
+1.8.1
+-----
+* Fixed bug that prevented **shodan scan submit** from finishing (#70)
+
 1.8.0
 -----
 * Shodan CLI now installs properly on Windows (#66)

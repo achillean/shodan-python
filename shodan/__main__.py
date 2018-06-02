@@ -898,7 +898,7 @@ def scan_submit(wait, filename, force, verbose, netblocks):
                         versions = [version for version in sorted(banner['ssl']['versions']) if not version.startswith('-')]
                         if len(versions) > 0:
                             click.echo('    |-- SSL Versions: {}'.format(', '.join(versions)))
-                    if 'dhparams' in banner['ssl']:
+                    if 'dhparams' in banner['ssl'] and banner['ssl']['dhparams']:
                         click.echo('    |-- Diffie-Hellman Parameters:')
                         click.echo('        {:15s}{}\n        {:15s}{}'.format('Bits:', banner['ssl']['dhparams']['bits'], 'Generator:', banner['ssl']['dhparams']['generator']))
                         if 'fingerprint' in banner['ssl']['dhparams']:

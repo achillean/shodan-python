@@ -125,7 +125,11 @@ class AsciiMap(object):
         for banner in random.sample(data, min(len(data), 5)):
             desc = '{} -> {} / {}'.format(get_ip(banner), banner['port'], banner['location']['country_code'])
             if banner['location']['city']:
-                desc += ' {}'.format(banner['location']['city'])
+                # Not all cities can be encoded in ASCII so ignore any errors
+                try:
+                    desc += ' {}'.format(banner['location']['city'])
+                except:
+                    pass
             
             if 'tags' in banner and banner['tags']:
                 desc += ' / {}'.format(','.join(banner['tags']))

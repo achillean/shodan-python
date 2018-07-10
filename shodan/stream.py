@@ -9,29 +9,31 @@ class Stream:
 
     base_url = 'https://stream.shodan.io'
 
-    def __init__(self, api_key):
+    def __init__(self, api_key, proxies=None):
         self.api_key = api_key
+        self.proxies = proxies
 
     def _create_stream(self, name, timeout=None):
         params = {
             'key': self.api_key,
         }
         stream_url = self.base_url + name
-        
+
         # The user doesn't want to use a timeout
         # If the timeout is specified as 0 then we also don't want to have a timeout
         if ( timeout and timeout <= 0 ) or ( timeout == 0 ):
             timeout = None
-        
+
         # If the user requested a timeout then we need to disable heartbeat messages
         # which are intended to keep stream connections alive even if there isn't any data
         # flowing through.
         if timeout:
             params['heartbeat'] = False
-        
+
         try:
             while True:
-                req = requests.get(stream_url, params=params, stream=True, timeout=timeout)
+                req = requests.get(stream_url, params=params, stream=True, timeout=timeout,
+                                   proxies=self.proxies)
 
                 # Status code 524 is special to Cloudflare
                 # It means that no data was sent from the streaming servers which caused Cloudflare
@@ -121,4 +123,4 @@ class Stream:
         stream = self._create_stream('/shodan/ports/%s' % ','.join([str(port) for port in ports]), timeout=timeout)
         for line in self._iter_stream(stream, raw):
             yield line
-            
+

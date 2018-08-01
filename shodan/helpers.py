@@ -23,17 +23,19 @@ def create_facet_string(facets):
         facet_str += ','
     return facet_str[:-1]
 
-    
-def api_request(key, function, params=None, data=None, base_url='https://api.shodan.io', method='get', retries=1):
+
+def api_request(key, function, params=None, data=None, base_url='https://api.shodan.io',
+                method='get', retries=1, proxies=None):
     """General-purpose function to create web requests to SHODAN.
-    
+
     Arguments:
         function  -- name of the function you want to execute
         params    -- dictionary of parameters for the function
-    
+        proxies   -- a proxies array for the requests library
+
     Returns
         A dictionary containing the function's results.
-    
+
     """
     # Add the API key parameter automatically
     params['key'] = key
@@ -44,11 +46,13 @@ def api_request(key, function, params=None, data=None, base_url='https://api.sho
     while tries <= retries:
         try:
             if method.lower() == 'post':
-                data = requests.post(base_url + function, json.dumps(data), params=params, headers={'content-type': 'application/json'})
+                data = requests.post(base_url + function, json.dumps(data), params=params,
+                                     headers={'content-type': 'application/json'},
+                                     proxies=proxies)
             elif method.lower() == 'delete':
-                data = requests.delete(base_url + function, params=params)
+                data = requests.delete(base_url + function, params=params, proxies=proxies)
             else:
-                data = requests.get(base_url + function, params=params)
+                data = requests.get(base_url + function, params=params, proxies=proxies)
 
             # Exit out of the loop
             break
@@ -66,17 +70,17 @@ def api_request(key, function, params=None, data=None, base_url='https://api.sho
         except:
             pass
         raise APIError('Invalid API key')
-    
+
     # Parse the text into JSON
     try:
         data = data.json()
     except:
         raise APIError('Unable to parse JSON response')
-    
+
     # Raise an exception if an error occurred
     if type(data) == dict and data.get('error', None):
         raise APIError(data['error'])
-    
+
     # Return the data
     return data
 
@@ -93,10 +97,10 @@ def iterate_files(files, fast=False):
             from ujson import loads
         except:
             pass
-    
+
     if isinstance(files, basestring):
         files = [files]
-    
+
     for filename in files:
         # Create a file handle depending on the filetype
         if filename.endswith('.gz'):
@@ -157,7 +161,7 @@ def humanize_bytes(bytes, precision=1):
         return '1 byte'
     if bytes < 1024:
         return '%.*f %s' % (precision, bytes, "bytes")
-    
+
     suffixes = ['KB', 'MB', 'GB', 'TB', 'PB']
     multiple = 1024.0    #.0 force float on python 2
     for suffix in suffixes:

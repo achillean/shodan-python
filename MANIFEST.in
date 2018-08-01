@@ -1,6 +1,6 @@
 include AUTHORS
 include LICENSE
 include requirements.txt
-inlcude CHANGELOG.md
+include CHANGELOG.md
 graft docs
 recursive-include shodan *.py

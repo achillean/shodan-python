@@ -1,6 +1,10 @@
 CHANGELOG
 =========
 
+unreleased
+----------
+* New optional parameter `proxies` for all interfaces to specify a proxy array for the requests library (#72)
+
 1.8.1
 -----
 * Fixed bug that prevented **shodan scan submit** from finishing (#70)

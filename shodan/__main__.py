@@ -522,7 +522,7 @@ def host(format, history, filename, save, ip):
             for banner in host['data']:
                 if banner['port'] in ports:
                     ports.remove(banner['port'])
-            
+
             # Add the placeholder banners
             for port in ports:
                 banner = {
@@ -1013,7 +1013,7 @@ def search(color, fields, limit, separator, query):
         results = api.search(query, limit=limit)
     except shodan.APIError as e:
         raise click.ClickException(e.value)
-    
+
     # Error out if no results were found
     if results['total'] == 0:
         raise click.ClickException('No search results found')

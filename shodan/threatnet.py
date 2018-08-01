@@ -11,17 +11,19 @@ class Threatnet:
     :type key: str
     :ivar stream: An instance of `shodan.Threatnet.Stream` that provides access to the Streaming API.
     """
-    
+
     class Stream:
 
         base_url = 'https://stream.shodan.io'
 
-        def __init__(self, parent):
+        def __init__(self, parent, proxies=None):
             self.parent = parent
+            self.proxies = proxies
 
         def _create_stream(self, name):
             try:
-                req = requests.get(self.base_url + name, params={'key': self.parent.api_key}, stream=True)
+                req = requests.get(self.base_url + name, params={'key': self.parent.api_key},
+                                   stream=True, proxies=self.proxies)
             except:
                 raise APIError('Unable to contact the Shodan Streaming API')
 
@@ -53,10 +55,10 @@ class Threatnet:
                 if line:
                     banner = json.loads(line)
                     yield banner
-    
+
     def __init__(self, key):
         """Initializes the API object.
-        
+
         :param key: The Shodan API key.
         :type key: str
         """

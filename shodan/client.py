@@ -43,7 +43,7 @@ class Shodan:
     :ivar exploits: An instance of `shodan.Shodan.Exploits` that provides access to the Exploits REST API.
     :ivar stream: An instance of `shodan.Shodan.Stream` that provides access to the Streaming API.
     """
-    
+
     class Data:
 
         def __init__(self, parent):
@@ -62,7 +62,7 @@ class Shodan:
             :returns: A list of objects where each object contains a 'name', 'size', 'timestamp' and 'url'
             """
             return self.parent._request('/shodan/data/{}'.format(dataset), {})
-    
+
     class Tools:
 
         def __init__(self, parent):
@@ -74,16 +74,16 @@ class Shodan:
             :returns: str -- your IP address
             """
             return self.parent._request('/tools/myip', {})
-    
+
     class Exploits:
 
         def __init__(self, parent):
             self.parent = parent
-            
+
         def search(self, query, page=1, facets=None):
             """Search the entire Shodan Exploits archive using the same query syntax
             as the website.
-            
+
             :param query: The exploit search query; same syntax as website.
             :type query: str
             :param facets: A list of strings or tuples to get summary information on.
@@ -100,17 +100,17 @@ class Shodan:
                 query_args['facets'] = create_facet_string(facets)
 
             return self.parent._request('/api/search', query_args, service='exploits')
-            
+
         def count(self, query, facets=None):
             """Search the entire Shodan Exploits archive but only return the total # of results,
             not the actual exploits.
-            
+
             :param query: The exploit search query; same syntax as website.
             :type query: str
             :param facets: A list of strings or tuples to get summary information on.
             :type facets: str
             :returns: dict -- a dictionary containing the results of the search.
-            
+
             """
             query_args = {
                 'query': query,
@@ -119,7 +119,7 @@ class Shodan:
                 query_args['facets'] = create_facet_string(facets)
 
             return self.parent._request('/api/count', query_args, service='exploits')
-    
+
     class Labs:
 
         def __init__(self, parent):
@@ -127,19 +127,21 @@ class Shodan:
 
         def honeyscore(self, ip):
             """Calculate the probability of an IP being an ICS honeypot.
-            
+
             :param ip: IP address of the device
             :type ip: str
 
             :returns: int -- honeyscore ranging from 0.0 to 1.0
             """
             return self.parent._request('/labs/honeyscore/{}'.format(ip), {})
-    
-    def __init__(self, key):
+
+    def __init__(self, key, proxies=None):
         """Initializes the API object.
-        
+
         :param key: The Shodan API key.
         :type key: str
+        :param proxies: A proxies array for the requests library, e.g. {'https': 'your proxy'}
+        :type key: dict
         """
         self.api_key = key
         self.base_url = 'https://api.shodan.io'
@@ -148,23 +150,25 @@ class Shodan:
         self.exploits = self.Exploits(self)
         self.labs = self.Labs(self)
         self.tools = self.Tools(self)
-        self.stream = Stream(key)
+        self.stream = Stream(key, proxies=proxies)
         self._session = requests.Session()
-            
+        if proxies:
+            self._session.proxies.update(proxies)
+
     def _request(self, function, params, service='shodan', method='get'):
         """General-purpose function to create web requests to SHODAN.
-        
+
         Arguments:
             function  -- name of the function you want to execute
             params    -- dictionary of parameters for the function
-        
+
         Returns
             A dictionary containing the function's results.
-        
+
         """
         # Add the API key parameter automatically
         params['key'] = self.api_key
-        
+
         # Determine the base_url based on which service we're interacting with
         base_url = {
             'shodan': self.base_url,
@@ -187,22 +191,22 @@ class Shodan:
                 error = data.json()['error']
             except Exception as e:
                 error = 'Invalid API key'
-            
+
             raise APIError(error)
-        
+
         # Parse the text into JSON
         try:
             data = data.json()
         except:
             raise APIError('Unable to parse JSON response')
-        
+
         # Raise an exception if an error occurred
         if type(data) == dict and 'error' in data:
             raise APIError(data['error'])
-        
+
         # Return the data
         return data
-    
+
     def count(self, query, facets=None):
         """Returns the total number of search results for the query.
 
@@ -210,7 +214,7 @@ class Shodan:
         :type query: str
         :param facets: (optional) A list of properties to get summary information on
         :type facets: str
-        
+
         :returns: A dictionary with 1 main property: total. If facets have been provided then another property called "facets" will be available at the top-level of the dictionary. Visit the website for more detailed information.
         """
         query_args = {
@@ -219,7 +223,7 @@ class Shodan:
         if facets:
             query_args['facets'] = create_facet_string(facets)
         return self._request('/shodan/host/count', query_args)
-    
+
     def host(self, ips, history=False, minify=False):
         """Get all available information on an IP.
 
@@ -232,14 +236,14 @@ class Shodan:
         """
         if isinstance(ips, basestring):
             ips = [ips]
-        
+
         params = {}
         if history:
             params['history'] = history
         if minify:
             params['minify'] = minify
         return self._request('/shodan/host/%s' % ','.join(ips), params)
-    
+
     def info(self):
         """Returns information about the current API key, such as a list of add-ons
         and other features that are enabled for the current user's API plan.
@@ -281,7 +285,7 @@ class Shodan:
         """
         if isinstance(ips, basestring):
             ips = [ips]
-        
+
         if isinstance(ips, dict):
             networks = json.dumps(ips)
         else:
@@ -320,7 +324,7 @@ class Shodan:
         :returns: A dictionary with general information about the scan, including its status in getting processed.
         """
         return self._request('/shodan/scan/%s' % scan_id, {})
-    
+
     def search(self, query, page=1, limit=None, offset=None, facets=None, minify=True):
         """Search the SHODAN database.
 
@@ -336,8 +340,8 @@ class Shodan:
         :type facets: str
         :param minify: (optional) Whether to minify the banner and only return the important data
         :type minify: bool
-        
-        :returns: A dictionary with 2 main items: matches and total. If facets have been provided then another property called "facets" will be available at the top-level of the dictionary. Visit the website for more detailed information.        
+
+        :returns: A dictionary with 2 main items: matches and total. If facets have been provided then another property called "facets" will be available at the top-level of the dictionary. Visit the website for more detailed information.
         """
         args = {
             'query': query,
@@ -352,9 +356,9 @@ class Shodan:
 
         if facets:
             args['facets'] = create_facet_string(facets)
-        
+
         return self._request('/shodan/host/search', args)
-    
+
     def search_cursor(self, query, minify=True, retries=5):
         """Search the SHODAN database.
 
@@ -369,7 +373,7 @@ class Shodan:
         :type minify: bool
         :param retries: (optional) How often to retry the search in case it times out
         :type minify: int
-        
+
         :returns: A search cursor that can be used as an iterator/ generator.
         """
         args = {
@@ -396,13 +400,13 @@ class Shodan:
 
                 tries += 1
                 time.sleep(1.0) # wait 1 second if the search errored out for some reason
-    
+
     def search_tokens(self, query):
         """Returns information about the search query itself (filters used etc.)
 
         :param query: Search query; identical syntax to the website
         :type query: str
-        
+
         :returns: A dictionary with 4 main properties: filters, errors, attributes and string.
         """
         query_args = {
@@ -481,7 +485,8 @@ class Shodan:
             'expires': expires,
         }
 
-        response = api_request(self.api_key, '/shodan/alert', data=data, params={}, method='post')
+        response = api_request(self.api_key, '/shodan/alert', data=data, params={}, method='post',
+                               proxies=self._session.proxies)
 
         return response
 
@@ -494,7 +499,8 @@ class Shodan:
 
         response = api_request(self.api_key, func, params={
             'include_expired': include_expired,
-            })
+            },
+            proxies=self._session.proxies)
 
         return response
 
@@ -502,7 +508,8 @@ class Shodan:
         """Delete the alert with the given ID."""
         func = '/shodan/alert/%s' % aid
 
-        response = api_request(self.api_key, func, params={}, method='delete')
+        response = api_request(self.api_key, func, params={}, method='delete',
+                               proxies=self._session.proxies)
 
         return response
 

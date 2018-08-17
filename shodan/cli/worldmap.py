@@ -18,6 +18,7 @@ import locale
 import random
 import time
 
+from shodan.exception import APIError
 from shodan.helpers import get_ip
 
 
@@ -209,7 +210,7 @@ class MapApp(object):
                         break
                 self.data = banners
                 self.last_fetch = epoch_now
-            except StandardError:
+            except APIError:
                 raise
         return refresh
 
@@ -221,7 +222,10 @@ class MapApp(object):
             now = int(time.time())
             refresh = self.fetch_data(now)
             m.set_data(self.data)
-            m.draw(scr)
+            try:
+                m.draw(scr)
+            except curses.error:
+                raise Exception('Terminal window too small')
             scr.addstr(0, 1, 'Shodan Radar', curses.A_BOLD)
             scr.addstr(0, 40, time.strftime("%c UTC", time.gmtime(now)).rjust(37), curses.A_BOLD)
 

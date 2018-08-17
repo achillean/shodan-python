@@ -1239,7 +1239,13 @@ def radar():
     api = shodan.Shodan(key)
 
     from shodan.cli.worldmap import launch_map
-    launch_map(api)
+
+    try:
+        launch_map(api)
+    except shodan.APIError as e:
+        raise click.ClickException(e.value)
+    except Exception as e:
+        raise click.ClickException(u'{}'.format(e))
 
 def async_spinner(finished):
     spinner = itertools.cycle(['-', '/', '|', '\\'])

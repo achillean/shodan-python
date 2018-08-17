@@ -6,6 +6,7 @@ unreleased
 * The CHANGELOG is now part of the packages.
 * Improved unicode handling in Python2 (#78)
 * Add `tsv` output format for **shodan host** (#65)
+* Show user-friendly error messages when running **shodan radar** without permission or in a window that's too small (#74)
 
 1.9.0
 -----

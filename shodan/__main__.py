@@ -186,7 +186,7 @@ def init(key):
         api = shodan.Shodan(key)
         test = api.info()
     except shodan.APIError as e:
-        raise click.ClickException('Invalid API key')
+        raise click.ClickException(e.value)
 
     # Store the API key in the user's directory
     keyfile = shodan_dir + '/api_key'

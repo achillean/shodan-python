@@ -190,9 +190,17 @@ class Shodan:
                 # Return the actual error message if the API returned valid JSON
                 error = data.json()['error']
             except Exception as e:
-                error = 'Invalid API key'
+                # If the response looks like HTML then it's probably the 401 page that nginx returns
+                # for 401 responses by default
+                if data.text.startswith('<'):
+                    error = 'Invalid API key'
+                else:
+                    # Otherwise lets raise the error message
+                    error = u'{}'.format(e)
 
             raise APIError(error)
+        else if data.status_code == 403:
+            raise APIError('Access denied (403 Forbidden)')
 
         # Parse the text into JSON
         try:

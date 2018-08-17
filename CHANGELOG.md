@@ -5,6 +5,7 @@ unreleased
 ----------
 * The CHANGELOG is now part of the packages.
 * Improved unicode handling in Python2 (#78)
+* Add `tsv` output format for **shodan host** (#65)
 
 1.9.0
 -----

@@ -1,5 +1,5 @@
-shodan: The official Python library and CLI for accessing Shodan
-================================================================
+shodan: The official Python library and CLI for Shodan
+======================================================
 
 .. image:: https://img.shields.io/pypi/v/shodan.svg
     :target: https://pypi.org/project/shodan/

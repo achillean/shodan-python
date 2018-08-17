@@ -22,7 +22,7 @@ Features
 - Bulk data downloads
 - `Command-line interface <https://cli.shodan.io>`_
 
-.. image:: https://asciinema.org/a/40357.png
+.. image:: https://cli.shodan.io/img/shodan-cli-preview.png
     :target: https://asciinema.org/~Shodan
     :width: 400px
     :align: center

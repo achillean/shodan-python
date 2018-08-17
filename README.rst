@@ -1,5 +1,5 @@
-shodan: The official Python library for accessing Shodan
-========================================================
+shodan: The official Python library and CLI for accessing Shodan
+================================================================
 
 .. image:: https://img.shields.io/pypi/v/shodan.svg
     :target: https://pypi.org/project/shodan/
@@ -20,6 +20,12 @@ Features
 - `Network alerts (aka private firehose) <https://help.shodan.io/guides/how-to-monitor-network>`_
 - Exploit search API fully implemented
 - Bulk data downloads
+- `Command-line interface <https://cli.shodan.io>`_
+
+.. image:: https://asciinema.org/a/40357.png
+    :target: https://asciinema.org/~Shodan
+    :width: 400px
+    :align: center
 
 
 Quick Start

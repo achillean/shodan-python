@@ -4,6 +4,7 @@ CHANGELOG
 unreleased
 ----------
 * The CHANGELOG is now part of the packages.
+* Improved unicode handling in Python2 (#78)
 
 1.9.0
 -----

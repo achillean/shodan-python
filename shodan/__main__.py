@@ -212,7 +212,7 @@ def alert_clear():
     try:
         alerts = api.alerts()
         for alert in alerts:
-            click.echo('Removing {} ({})'.format(alert['name'], alert['id']))
+            click.echo(u'Removing {} ({})'.format(alert['name'], alert['id']))
             api.delete_alert(alert['id'])
     except shodan.APIError as e:
         raise click.ClickException(e.value)
@@ -249,11 +249,11 @@ def alert_list(expired):
         raise click.ClickException(e.value)
 
     if len(results) > 0:
-        click.echo('# {:14} {:<21} {:<15s}'.format('Alert ID', 'Name', 'IP/ Network'))
+        click.echo(u'# {:14} {:<21} {:<15s}'.format('Alert ID', 'Name', 'IP/ Network'))
         # click.echo('#' * 65)
         for alert in results:
             click.echo(
-                '{:16} {:<30} {:<35} '.format(
+                u'{:16} {:<30} {:<35} '.format(
                     click.style(alert['id'],  fg='yellow'),
                     click.style(alert['name'], fg='cyan'),
                     click.style(', '.join(alert['filters']['ip']), fg='white')
@@ -326,7 +326,7 @@ def data_list(dataset):
         files = api.data.list_files(dataset)
 
         for file in files:
-            click.echo(click.style('{:20s}'.format(file['name']), fg='cyan'), nl=False)
+            click.echo(click.style(u'{:20s}'.format(file['name']), fg='cyan'), nl=False)
             click.echo(click.style('{:10s}'.format(helpers.humanize_bytes(file['size'])), fg='yellow'), nl=False)
             click.echo('{}'.format(file['url']))
     else:
@@ -473,19 +473,19 @@ def host(format, history, filename, save, ip):
         # General info
         click.echo(click.style(ip, fg='green'))
         if len(host['hostnames']) > 0:
-            click.echo('{:25s}{}'.format('Hostnames:', ';'.join(host['hostnames'])))
+            click.echo(u'{:25s}{}'.format('Hostnames:', ';'.join(host['hostnames'])))
 
         if 'city' in host and host['city']:
-            click.echo('{:25s}{}'.format('City:', host['city']))
+            click.echo(u'{:25s}{}'.format('City:', host['city']))
 
         if 'country_name' in host and host['country_name']:
-            click.echo('{:25s}{}'.format('Country:', host['country_name']))
+            click.echo(u'{:25s}{}'.format('Country:', host['country_name']))
 
         if 'os' in host and host['os']:
-            click.echo('{:25s}{}'.format('Operating System:', host['os']))
+            click.echo(u'{:25s}{}'.format('Operating System:', host['os']))
 
         if 'org' in host and host['org']:
-            click.echo('{:25s}{}'.format('Organization:', host['org']))
+            click.echo(u'{:25s}{}'.format('Organization:', host['org']))
 
         if 'last_update' in host and host['last_update']:
             click.echo('{:25s}{}'.format('Updated:', host['last_update']))

@@ -1,8 +1,12 @@
 CHANGELOG
 =========
 
-1.9.0
+unreleased
 ----------
+* The CHANGELOG is now part of the packages.
+
+1.9.0
+-----
 * New optional parameter `proxies` for all interfaces to specify a proxy array for the requests library (#72)
 
 1.8.1

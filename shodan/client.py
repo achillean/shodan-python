@@ -199,7 +199,7 @@ class Shodan:
                     error = u'{}'.format(e)
 
             raise APIError(error)
-        else if data.status_code == 403:
+        elif data.status_code == 403:
             raise APIError('Access denied (403 Forbidden)')
 
         # Parse the text into JSON

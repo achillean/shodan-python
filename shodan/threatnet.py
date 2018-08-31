@@ -29,7 +29,7 @@ class Threatnet:
 
             if req.status_code != 200:
                 try:
-                    raise APIError(data.json()['error'])
+                    raise APIError(req.json()['error'])
                 except:
                     pass
                 raise APIError('Invalid API key or you do not have access to the Streaming API')

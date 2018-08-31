@@ -93,6 +93,7 @@ def iterate_files(files, fast=False):
         # It's significantly faster at encoding/ decoding JSON but it doesn't support as
         # many options as the standard library. As such, we're mostly interested in using it for
         # decoding since reading/ parsing files will use up the most time.
+        # pylint: disable=E0401
         try:
             from ujson import loads
         except:

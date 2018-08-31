@@ -48,7 +48,7 @@ from shodan.cli.converter import CsvConverter, KmlConverter, GeoJsonConverter, E
 from shodan.cli.settings import SHODAN_CONFIG_DIR, COLORIZE_FIELDS
 
 # Helper methods
-from shodan.cli.helpers import get_api_key
+from shodan.cli.helpers import async_spinner, get_api_key, escape_data, timestr, open_streaming_file, get_banner_field, match_filters
 from shodan.cli.host import HOST_PRINT
 
 # Allow 3rd-parties to develop custom commands
@@ -65,65 +65,21 @@ except NameError:
     basestring = str
 
 
-def escape_data(args):
-    # Ensure the provided string isn't unicode data
-    if not isinstance(args, str):
-        args = args.encode('ascii', 'replace')
-    return args.replace('\n', '\\n').replace('\r', '\\r').replace('\t', '\\t')
-
-def timestr():
-    return datetime.datetime.utcnow().strftime('%Y-%m-%d')
-
-def open_streaming_file(directory, timestr, compresslevel=9):
-    return gzip.open('%s/%s.json.gz' % (directory, timestr), 'a', compresslevel)
-
-def get_banner_field(banner, flat_field):
-    # The provided field is a collapsed form of the actual field
-    fields = flat_field.split('.')
-
-    try:
-        current_obj = banner
-        for field in fields:
-            current_obj = current_obj[field]
-        return current_obj
-    except:
-        pass
-
-    return None
-
-def match_filters(banner, filters):
-    for args in filters:
-        flat_field, check = args.split(':', 1)
-        value = get_banner_field(banner, flat_field)
-
-        # If the field doesn't exist on the banner then ignore the record
-        if not value:
-            return False
-
-        # It must match all filters to be allowed
-        field_type = type(value)
-
-        # For lists of strings we see whether the desired value is contained in the field
-        if field_type == list or isinstance(value, basestring):
-            if check not in value:
-                return False
-        elif field_type == int:
-            if int(check) != value:
-                return False
-        elif field_type == float:
-            if float(check) != value:
-                return False
-        else:
-            # Ignore unknown types
-            pass
-
-    return True
-
-
+# Define the main entry point for all of our commands
+# and expose a way for 3rd-party plugins to tie into the Shodan CLI.
 @with_plugins(iter_entry_points('shodan.cli.plugins'))
 @click.group(context_settings=CONTEXT_SETTINGS)
 def main():
     pass
+
+
+# Large subcommands are stored in separate modules
+from shodan.cli.alert import alert
+from shodan.cli.data import data
+from shodan.cli.scan import scan
+main.add_command(alert)
+main.add_command(data)
+main.add_command(scan)
 
 
 @main.command()
@@ -184,7 +140,7 @@ def init(key):
     key = key.strip()
     try:
         api = shodan.Shodan(key)
-        test = api.info()
+        api.info()
     except shodan.APIError as e:
         raise click.ClickException(e.value)
 
@@ -195,95 +151,6 @@ def init(key):
         click.echo(click.style('Successfully initialized', fg='green'))
 
     os.chmod(keyfile, 0o600)
-
-
-@main.group()
-def alert():
-    """Manage the network alerts for your account"""
-    pass
-
-
-@alert.command(name='clear')
-def alert_clear():
-    """Remove all alerts"""
-    key = get_api_key()
-
-    # Get the list
-    api = shodan.Shodan(key)
-    try:
-        alerts = api.alerts()
-        for alert in alerts:
-            click.echo(u'Removing {} ({})'.format(alert['name'], alert['id']))
-            api.delete_alert(alert['id'])
-    except shodan.APIError as e:
-        raise click.ClickException(e.value)
-    click.echo("Alerts deleted")
-
-@alert.command(name='create')
-@click.argument('name', metavar='<name>')
-@click.argument('netblock', metavar='<netblock>')
-def alert_create(name, netblock):
-    """Create a network alert to monitor an external network"""
-    key = get_api_key()
-
-    # Get the list
-    api = shodan.Shodan(key)
-    try:
-        alert = api.create_alert(name, netblock)
-    except shodan.APIError as e:
-        raise click.ClickException(e.value)
-
-    click.echo(click.style('Successfully created network alert!', fg='green'))
-    click.echo(click.style('Alert ID: {}'.format(alert['id']), fg='cyan'))
-
-@alert.command(name='list')
-@click.option('--expired', help='Whether or not to show expired alerts.', default=True, type=bool)
-def alert_list(expired):
-    """List all the active alerts"""
-    key = get_api_key()
-
-    # Get the list
-    api = shodan.Shodan(key)
-    try:
-        results = api.alerts(include_expired=expired)
-    except shodan.APIError as e:
-        raise click.ClickException(e.value)
-
-    if len(results) > 0:
-        click.echo(u'# {:14} {:<21} {:<15s}'.format('Alert ID', 'Name', 'IP/ Network'))
-        # click.echo('#' * 65)
-        for alert in results:
-            click.echo(
-                u'{:16} {:<30} {:<35} '.format(
-                    click.style(alert['id'],  fg='yellow'),
-                    click.style(alert['name'], fg='cyan'),
-                    click.style(', '.join(alert['filters']['ip']), fg='white')
-                ),
-                nl=False
-            )
-
-            if 'expired' in alert and alert['expired']:
-                click.echo(click.style('expired', fg='red'))
-            else:
-                click.echo('')
-    else:
-        click.echo("You haven't created any alerts yet.")
-
-
-@alert.command(name='remove')
-@click.argument('alert_id', metavar='<alert ID>')
-def alert_remove(alert_id):
-    """Remove the specified alert"""
-    key = get_api_key()
-
-    # Get the list
-    api = shodan.Shodan(key)
-    try:
-        results = api.delete_alert(alert_id)
-    except shodan.APIError as e:
-        raise click.ClickException(e.value)
-    click.echo("Alert deleted")
-
 
 @main.command()
 @click.argument('query', metavar='<search query>', nargs=-1)
@@ -306,90 +173,6 @@ def count(query):
         raise click.ClickException(e.value)
 
     click.echo(results['total'])
-
-
-@main.group()
-def data():
-    """Bulk data access to Shodan"""
-    pass
-
-
-@data.command(name='list')
-@click.option('--dataset', help='See the available files in the given dataset', default=None, type=str)
-def data_list(dataset):
-    """List available datasets or the files within those datasets."""
-    # Setup the API connection
-    key = get_api_key()
-    api = shodan.Shodan(key)
-
-    if dataset:
-        # Show the files within this dataset
-        files = api.data.list_files(dataset)
-
-        for file in files:
-            click.echo(click.style(u'{:20s}'.format(file['name']), fg='cyan'), nl=False)
-            click.echo(click.style('{:10s}'.format(helpers.humanize_bytes(file['size'])), fg='yellow'), nl=False)
-            click.echo('{}'.format(file['url']))
-    else:
-        # If no dataset was provided then show a list of all datasets
-        datasets = api.data.list_datasets()
-
-        for ds in datasets:
-            click.echo(click.style('{:15s}'.format(ds['name']), fg='cyan'), nl=False)
-            click.echo('{}'.format(ds['description']))
-
-
-@data.command(name='download')
-@click.option('--chunksize', help='The size of the chunks that are downloaded into memory before writing them to disk.', default=1024, type=int)
-@click.option('--filename', '-O', help='Save the file as the provided filename instead of the default.')
-@click.argument('dataset', metavar='<dataset>')
-@click.argument('name', metavar='<file>')
-def data_download(chunksize, filename, dataset, name):
-    # Setup the API connection
-    key = get_api_key()
-    api = shodan.Shodan(key)
-
-    # Get the file object that the user requested which will contain the URL and total file size
-    file = None
-    try:
-        files = api.data.list_files(dataset)
-        for tmp in files:
-            if tmp['name'] == name:
-                file = tmp
-                break
-    except shodan.APIError as e:
-        raise click.ClickException(e.value)
-
-    # The file isn't available
-    if not file:
-        raise click.ClickException('File not found')
-
-    # Start downloading the file
-    response = requests.get(file['url'], stream=True)
-
-    # Figure out the size of the file based on the headers
-    filesize = response.headers.get('content-length', None)
-    if not filesize:
-        # Fall back to using the filesize provided by the API
-        filesize = file['size']
-    else:
-        filesize = int(filesize)
-
-    chunk_size = 1024
-    limit = filesize / chunk_size
-
-    # Create a default filename based on the dataset and the filename within that dataset
-    if not filename:
-        filename = '{}-{}'.format(dataset, name)
-
-    # Open the output file and start writing to it in chunks
-    with open(filename, 'wb') as fout:
-        with click.progressbar(response.iter_content(chunk_size=chunk_size), length=limit) as bar:
-            for chunk in bar:
-                if chunk:
-                    fout.write(chunk)
-
-    click.echo(click.style('Download completed: {}'.format(filename), 'green'))
 
 
 @main.command()
@@ -514,7 +297,7 @@ Scan credits available: {1}
 @click.option('--fields', help='List of properties to output.', default='ip_str,port,hostnames,data')
 @click.option('--filters', '-f', help='Filter the results for specific values using key:value pairs.', multiple=True)
 @click.option('--filename', '-O', help='Save the filtered results in the given file (append if file exists).')
-@click.option('--separator', help='The separator between the properties of the search results.', default='\t')
+@click.option('--separator', help='The separator between the properties of the search results.', default=u'\t')
 @click.argument('filenames', metavar='<filenames>', type=click.Path(exists=True), nargs=-1)
 def parse(color, fields, filters, filename, separator, filenames):
     """Extract information out of compressed JSON files."""
@@ -540,7 +323,7 @@ def parse(color, fields, filters, filename, separator, filenames):
         fout = helpers.open_file(filename)
 
     for banner in helpers.iterate_files(filenames):
-        row = ''
+        row = u''
 
         # Validate the banner against any provided filters
         if has_filters and not match_filters(banner, filters):
@@ -552,16 +335,16 @@ def parse(color, fields, filters, filename, separator, filenames):
 
         # Loop over all the fields and print the banner as a row
         for field in fields:
-            tmp = ''
+            tmp = u''
             value = get_banner_field(banner, field)
             if value:
                 field_type = type(value)
 
                 # If the field is an array then merge it together
                 if field_type == list:
-                    tmp = ';'.join(value)
+                    tmp = u';'.join(value)
                 elif field_type in [int, float]:
-                    tmp = str(value)
+                    tmp = u'{}'.format(value)
                 else:
                     tmp = escape_data(value)
 
@@ -584,309 +367,6 @@ def myip():
     api = shodan.Shodan(key)
     try:
         click.echo(api.tools.myip())
-    except shodan.APIError as e:
-        raise click.ClickException(e.value)
-
-
-@main.group()
-def scan():
-    """Scan an IP/ netblock using Shodan."""
-    pass
-
-
-@scan.command(name='internet')
-@click.option('--quiet', help='Disable the printing of information to the screen.', default=False, is_flag=True)
-@click.argument('port', type=int)
-@click.argument('protocol', type=str)
-def scan_internet(quiet, port, protocol):
-    """Scan the Internet for a specific port and protocol using the Shodan infrastructure."""
-    key = get_api_key()
-    api = shodan.Shodan(key)
-
-    try:
-        # Submit the request to Shodan
-        click.echo('Submitting Internet scan to Shodan...', nl=False)
-        scan = api.scan_internet(port, protocol)
-        click.echo('Done')
-
-        # If the requested port is part of the regular Shodan crawling, then
-        # we don't know when the scan is done so lets return immediately and
-        # let the user decide when to stop waiting for further results.
-        official_ports = api.ports()
-        if port in official_ports:
-            click.echo('The requested port is already indexed by Shodan. A new scan for the port has been launched, please subscribe to the real-time stream for results.')
-        else:
-            # Create the output file
-            filename = '{0}-{1}.json.gz'.format(port, protocol)
-            counter = 0
-            with helpers.open_file(filename, 'w') as fout:
-                click.echo('Saving results to file: {0}'.format(filename))
-
-                # Start listening for results
-                done = False
-
-                # Keep listening for results until the scan is done
-                click.echo('Waiting for data, please stand by...')
-                while not done:
-                    try:
-                        for banner in api.stream.ports([port], timeout=90):
-                            counter += 1
-                            helpers.write_banner(fout, banner)
-
-                            if not quiet:
-                                click.echo('{0:<40} {1:<20} {2}'.format(
-                                        click.style(helpers.get_ip(banner), fg=COLORIZE_FIELDS['ip_str']),
-                                        click.style(str(banner['port']), fg=COLORIZE_FIELDS['port']),
-                                        ';'.join(banner['hostnames'])
-                                    )
-                                )
-                    except shodan.APIError as e:
-                        # We stop waiting for results if the scan has been processed by the crawlers and
-                        # there haven't been new results in a while
-                        if done:
-                            break
-
-                        scan = api.scan_status(scan['id'])
-                        if scan['status'] == 'DONE':
-                            done = True
-                    except socket.timeout as e:
-                        # We stop waiting for results if the scan has been processed by the crawlers and
-                        # there haven't been new results in a while
-                        if done:
-                            break
-
-                        scan = api.scan_status(scan['id'])
-                        if scan['status'] == 'DONE':
-                            done = True
-                    except Exception as e:
-                        raise click.ClickException(repr(e))
-            click.echo('Scan finished: {0} devices found'.format(counter))
-    except shodan.APIError as e:
-        raise click.ClickException(e.value)
-
-
-@scan.command(name='protocols')
-def scan_protocols():
-    """List the protocols that you can scan with using Shodan."""
-    key = get_api_key()
-    api = shodan.Shodan(key)
-    try:
-        protocols = api.protocols()
-
-        for name, description in iter(protocols.items()):
-            click.echo(click.style('{0:<30}'.format(name), fg='cyan') + description)
-    except shodan.APIError as e:
-        raise click.ClickException(e.value)
-
-
-@scan.command(name='submit')
-@click.option('--wait', help='How long to wait for results to come back. If this is set to "0" or below return immediately.', default=20, type=int)
-@click.option('--filename', help='Save the results in the given file.', default='', type=str)
-@click.option('--force', default=False, is_flag=True)
-@click.option('--verbose', default=False, is_flag=True)
-@click.argument('netblocks', metavar='<ip address>', nargs=-1)
-def scan_submit(wait, filename, force, verbose, netblocks):
-    """Scan an IP/ netblock using Shodan."""
-    key = get_api_key()
-    api = shodan.Shodan(key)
-    alert = None
-
-    # Submit the IPs for scanning
-    try:
-        # Submit the scan
-        scan = api.scan(netblocks, force=force)
-
-        now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
-
-        click.echo('')
-        click.echo('Starting Shodan scan at {} - {} scan credits left'.format(now, scan['credits_left']))
-
-        if verbose:
-            click.echo('# Scan ID: {}'.format(scan['id']))
-
-        # Return immediately
-        if wait <= 0:
-            click.echo('Exiting now, not waiting for results. Use the API or website to retrieve the results of the scan.')
-        else:
-            # Setup an alert to wait for responses
-            alert = api.create_alert('Scan: {}'.format(', '.join(netblocks)), netblocks)
-
-            # Create the output file if necessary
-            filename = filename.strip()
-            fout = None
-            if filename != '':
-                # Add the appropriate extension if it's not there atm
-                if not filename.endswith('.json.gz'):
-                    filename += '.json.gz'
-                fout = helpers.open_file(filename, 'w')
-
-            # Start a spinner
-            finished_event = threading.Event()
-            progress_bar_thread = threading.Thread(target=async_spinner, args=(finished_event,))
-            progress_bar_thread.start()
-
-            # Now wait a few seconds for items to get returned
-            hosts = collections.defaultdict(dict)
-            done = False
-            scan_start = time.time()
-            cache = {}
-            while not done:
-                try:
-                    for banner in api.stream.alert(aid=alert['id'], timeout=wait):
-                        ip = banner.get('ip', banner.get('ipv6', None))
-                        if not ip:
-                            continue
-
-                        # Don't show duplicate banners
-                        cache_key = '{}:{}'.format(ip, banner['port'])
-                        if cache_key not in cache:
-                            hosts[helpers.get_ip(banner)][banner['port']] = banner
-                            cache[cache_key] = True
-
-                        # If we've grabbed data for more than 60 seconds it might just be a busy network and we should move on
-                        if time.time() - scan_start >= 60:
-                            scan = api.scan_status(scan['id'])
-
-                            if verbose:
-                                click.echo('# Scan status: {}'.format(scan['status']))
-
-                            if scan['status'] == 'DONE':
-                                done = True
-                                break
-
-                except shodan.APIError as e:
-                    # If the connection timed out before the timeout, that means the streaming server
-                    # that the user tried to reach is down. In that case, lets wait briefly and try
-                    # to connect again!
-                    if (time.time() - scan_start) < wait:
-                        time.sleep(0.5)
-                        continue
-
-                    # Exit if the scan was flagged as done somehow
-                    if done:
-                        break
-
-                    scan = api.scan_status(scan['id'])
-                    if scan['status'] == 'DONE':
-                        done = True
-
-                    if verbose:
-                        click.echo('# Scan status: {}'.format(scan['status']))
-                except socket.timeout as e:
-                    # If the connection timed out before the timeout, that means the streaming server
-                    # that the user tried to reach is down. In that case, lets wait a second and try
-                    # to connect again!
-                    if (time.time() - scan_start) < wait:
-                        continue
-
-                    done = True
-                except Exception as e:
-                    finished_event.set()
-                    progress_bar_thread.join()
-                    raise click.ClickException(repr(e))
-
-            finished_event.set()
-            progress_bar_thread.join()
-
-            def print_field(name, value):
-                click.echo('  {:25s}{}'.format(name, value))
-
-            def print_banner(banner):
-                click.echo('    {:20s}'.format(click.style(str(banner['port']), fg='green') + '/' + banner['transport']), nl=False)
-
-                if 'product' in banner:
-                    click.echo(banner['product'], nl=False)
-
-                    if 'version' in banner:
-                        click.echo(' ({})'.format(banner['version']), nl=False)
-
-                click.echo('')
-
-                # Show optional ssl info
-                if 'ssl' in banner:
-                    if 'versions' in banner['ssl']:
-                        # Only print SSL versions if they were successfully tested
-                        versions = [version for version in sorted(banner['ssl']['versions']) if not version.startswith('-')]
-                        if len(versions) > 0:
-                            click.echo('    |-- SSL Versions: {}'.format(', '.join(versions)))
-                    if 'dhparams' in banner['ssl'] and banner['ssl']['dhparams']:
-                        click.echo('    |-- Diffie-Hellman Parameters:')
-                        click.echo('        {:15s}{}\n        {:15s}{}'.format('Bits:', banner['ssl']['dhparams']['bits'], 'Generator:', banner['ssl']['dhparams']['generator']))
-                        if 'fingerprint' in banner['ssl']['dhparams']:
-                            click.echo('        {:15s}{}'.format('Fingerprint:', banner['ssl']['dhparams']['fingerprint']))
-
-            if hosts:
-                # Remove the remaining spinner character
-                click.echo('\b ')
-
-                for ip in sorted(hosts):
-                    host = next(iter(hosts[ip].items()))[1]
-
-                    click.echo(click.style(ip, fg='cyan'), nl=False)
-                    if 'hostnames' in host and host['hostnames']:
-                        click.echo(' ({})'.format(', '.join(host['hostnames'])), nl=False)
-                    click.echo('')
-
-                    if 'location' in host and 'country_name' in host['location'] and host['location']['country_name']:
-                        print_field('Country', host['location']['country_name'])
-
-                        if 'city' in host['location'] and host['location']['city']:
-                            print_field('City', host['location']['city'])
-                    if 'org' in host and host['org']:
-                        print_field('Organization', host['org'])
-                    if 'os' in host and host['os']:
-                        print_field('Operating System', host['os'])
-                    click.echo('')
-
-                    # Output the vulnerabilities the host has
-                    if 'vulns' in host and len(host['vulns']) > 0:
-                        vulns = []
-                        for vuln in host['vulns']:
-                            if vuln.startswith('!'):
-                                continue
-                            if vuln.upper() == 'CVE-2014-0160':
-                                vulns.append(click.style('Heartbleed', fg='red'))
-                            else:
-                                vulns.append(click.style(vuln, fg='red'))
-
-                        if len(vulns) > 0:
-                            click.echo('  {:25s}'.format('Vulnerabilities:'), nl=False)
-
-                            for vuln in vulns:
-                                click.echo(vuln + '\t', nl=False)
-
-                            click.echo('')
-
-                    # Print all the open ports:
-                    click.echo('  Open Ports:')
-                    for port in sorted(hosts[ip]):
-                        print_banner(hosts[ip][port])
-
-                        # Save the banner in a file if necessary
-                        if fout:
-                            helpers.write_banner(fout, hosts[ip][port])
-
-                    click.echo('')
-            else:
-                # Prepend a \b to remove the spinner
-                click.echo('\bNo open ports found or the host has been recently crawled and cant get scanned again so soon.')
-    except shodan.APIError as e:
-        raise click.ClickException(e.value)
-    finally:
-        # Remove any alert
-        if alert:
-            api.delete_alert(alert['id'])
-
-
-@scan.command(name='status')
-@click.argument('scan_id', type=str)
-def scan_status(scan_id):
-    """Check the status of an on-demand scan."""
-    key = get_api_key()
-    api = shodan.Shodan(key)
-    try:
-        scan = api.scan_status(scan_id)
-        click.echo(scan['status'])
     except shodan.APIError as e:
         raise click.ClickException(e.value)
 
@@ -930,9 +410,9 @@ def search(color, fields, limit, separator, query):
         raise click.ClickException('No search results found')
 
     # We buffer the entire output so we can use click's pager functionality
-    output = ''
+    output = u''
     for banner in results['matches']:
-        row = ''
+        row = u''
 
         # Loop over all the fields and print the banner as a row
         for field in fields:
@@ -942,9 +422,9 @@ def search(color, fields, limit, separator, query):
 
                 # If the field is an array then merge it together
                 if field_type == list:
-                    tmp = ';'.join(banner[field])
+                    tmp = u';'.join(banner[field])
                 elif field_type in [int, float]:
-                    tmp = str(banner[field])
+                    tmp = u'{}'.format(banner[field])
                 else:
                     tmp = escape_data(banner[field])
 
@@ -957,7 +437,7 @@ def search(color, fields, limit, separator, query):
             row += separator
 
             # click.echo(out + separator, nl=False)
-        output += row + '\n'
+        output += row + u'\n'
         # click.echo('')
     click.echo_via_pager(output)
 
@@ -1030,6 +510,7 @@ def stats(limit, facets, filename, query):
         counter = 0
         has_items = True
         while has_items:
+            # pylint: disable=W0612
             row = ['' for i in range(len(results['facets']) * 2)]
 
             pos = 0
@@ -1170,20 +651,20 @@ def stream(color, fields, separator, limit, datadir, ports, quiet, timeout, stre
 
                 # Print the banner information to stdout
                 if not quiet:
-                    row = ''
+                    row = u''
 
                     # Loop over all the fields and print the banner as a row
                     for field in fields:
-                        tmp = ''
+                        tmp = u''
                         value = get_banner_field(banner, field)
                         if value:
                             field_type = type(value)
 
                             # If the field is an array then merge it together
                             if field_type == list:
-                                tmp = ';'.join(value)
+                                tmp = u';'.join(value)
                             elif field_type in [int, float]:
-                                tmp = str(value)
+                                tmp = u'{}'.format(value)
                             else:
                                 tmp = escape_data(value)
 
@@ -1246,13 +727,6 @@ def radar():
         raise click.ClickException(e.value)
     except Exception as e:
         raise click.ClickException(u'{}'.format(e))
-
-def async_spinner(finished):
-    spinner = itertools.cycle(['-', '/', '|', '\\'])
-    while not finished.is_set():
-        sys.stdout.write('\b{}'.format(next(spinner)))
-        sys.stdout.flush()
-        finished.wait(0.2)
 
 if __name__ == '__main__':
     main()

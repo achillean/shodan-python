@@ -28,6 +28,9 @@ MAPS = {
         'corners': (1, 4, 23, 73),
         # lat top, lon left, lat bottom, lon right
         'coords': [90.0, -180.0, -90.0, 180.0],
+
+        # PyLint freaks out about the world map backslashes so ignore those warnings
+        # pylint: disable=W1401
         'data': '''
                . _..::__:  ,-"-"._       |7       ,     _,.__             
        _.___ _ _<_>`!(._`.`-.    /        _._     `_ ,_/  '  '-._.---.-.__

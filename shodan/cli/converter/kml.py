@@ -45,27 +45,6 @@ class KmlConverter(Converter):
             if 'hostnames' in host and host['hostnames']:
                 placemark += '<div><a style="color: #999;margin-top:-10px;padding-top:0;" href="http://{0}" target="_blank">{0}</a></div>'.format(host['hostnames'][0])
 
-            test = """
-    <table>
-        <tbody>
-          <tr>
-            <td>City</td>
-            <th>Albuquerque</th>
-          </tr>
-          <tr>
-            <td>Country</td>
-            <th>United States</th>
-          </tr>
-          <tr>
-            <td>Organization</td>
-            <th>Nexcess.net L.L.C.</th>
-          </tr>
-        </tbody>
-    </table>
-    <h2>Ports</h2>
-    <ul>
-            """
-
             placemark += '<h2>Ports</h2><ul>'
 
             for port in host['ports']:
@@ -123,5 +102,5 @@ class KmlConverter(Converter):
             placemark += '</Placemark>'
 
             self.fout.write(placemark.encode('utf-8'))
-        except Exception as e:
+        except:
             pass

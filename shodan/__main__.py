@@ -76,9 +76,11 @@ def main():
 # Large subcommands are stored in separate modules
 from shodan.cli.alert import alert
 from shodan.cli.data import data
+from shodan.cli.organization import org
 from shodan.cli.scan import scan
 main.add_command(alert)
 main.add_command(data)
+main.add_command(org)
 main.add_command(scan)
 
 
@@ -134,7 +136,7 @@ def init(key):
         try:
             os.mkdir(shodan_dir)
         except OSError:
-            raise click.ClickException('Unable to create directory to store the Shodan API key (%s)' % shodan_dir)
+            raise click.ClickException('Unable to create directory to store the Shodan API key ({})'.format(shodan_dir))
 
     # Make sure it's a valid API key
     key = key.strip()
@@ -237,7 +239,7 @@ def download(limit, filename, query):
         # Let the user know we're done
         if count < limit:
             click.echo(click.style('Notice: fewer results were saved than requested', 'yellow'))
-        click.echo(click.style('Saved %s results into file %s' % (count, filename), 'green'))
+        click.echo(click.style(u'Saved {} results into file {}'.format(count, filename), 'green'))
 
 
 @main.command()
@@ -480,8 +482,8 @@ def stats(limit, facets, filename, query):
             else:
                 value = str(value)
 
-            click.echo(click.style('{:28s}'.format(value), fg='cyan'), nl=False)
-            click.echo(click.style('{:12,d}'.format(item['count']), fg='green'))
+            click.echo(click.style(u'{:28s}'.format(value), fg='cyan'), nl=False)
+            click.echo(click.style(u'{:12,d}'.format(item['count']), fg='green'))
 
         click.echo('')
 

@@ -23,6 +23,7 @@ from .stream import Stream
 # pip install requests[security]
 #
 # Which will download libraries that offer more full-featured SSL classes
+# pylint: disable=E1101
 try:
     requests.packages.urllib3.disable_warnings()
 except:
@@ -135,6 +136,40 @@ class Shodan:
             """
             return self.parent._request('/labs/honeyscore/{}'.format(ip), {})
 
+    class Organization:
+
+        def __init__(self, parent):
+            self.parent = parent
+
+        def add_member(self, user, notify=True):
+            """Add the user to the organization.
+
+            :param user: username or email address
+            :type user: str
+            :param notify: whether or not to send the user an email notification
+            :type notify: bool
+
+            :returns: True if it succeeded and raises an Exception otherwise
+            """
+            return self.parent._request('/org/member/{}'.format(user), {
+                'notify': notify,
+            }, method='PUT')['success']
+
+        def info(self):
+            """Returns general information about the organization the current user is a member of.
+            """
+            return self.parent._request('/org', {})
+
+        def remove_member(self, user):
+            """Remove the user from the organization.
+
+            :param user: username or email address
+            :type user: str
+
+            :returns: True if it succeeded and raises an Exception otherwise
+            """
+            return self.parent._request('/org/member/{}'.format(user), {}, method='DELETE')['success']
+
     def __init__(self, key, proxies=None):
         """Initializes the API object.
 
@@ -149,6 +184,7 @@ class Shodan:
         self.data = self.Data(self)
         self.exploits = self.Exploits(self)
         self.labs = self.Labs(self)
+        self.org = self.Organization(self)
         self.tools = self.Tools(self)
         self.stream = Stream(key, proxies=proxies)
         self._session = requests.Session()
@@ -177,8 +213,13 @@ class Shodan:
 
         # Send the request
         try:
-            if method.lower() == 'post':
+            method = method.lower()
+            if method == 'post':
                 data = self._session.post(base_url + function, params)
+            elif method == 'put':
+                data = self._session.put(base_url + function, params=params)
+            elif method == 'delete':
+                data = self._session.delete(base_url + function, params=params)
             else:
                 data = self._session.get(base_url + function, params=params)
         except:
@@ -384,13 +425,12 @@ class Shodan:
 
         :returns: A search cursor that can be used as an iterator/ generator.
         """
-        args = {
-            'query': query,
-            'minify': minify,
-        }
-
         page = 1
         tries = 0
+        results = {
+            'matches': [],
+            'total': None,
+        }
         while page == 1 or results['matches']:
             try:
                 results = self.search(query, minify=minify, page=page)

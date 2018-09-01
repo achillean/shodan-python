@@ -92,3 +92,14 @@ def async_spinner(finished):
         sys.stdout.write('\b{}'.format(next(spinner)))
         sys.stdout.flush()
         finished.wait(0.2)
+
+
+def humanize_api_plan(plan):
+    return {
+        'oss': 'Free',
+        'dev': 'Membership',
+        'basic': 'Freelancer API',
+        'plus': 'Small Business API',
+        'corp': 'Corporate API',
+        'stream-100': 'Enterprise',
+    }[plan]

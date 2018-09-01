@@ -39,8 +39,8 @@ def alert_create(name, netblock):
     except shodan.APIError as e:
         raise click.ClickException(e.value)
 
-    click.echo(click.style('Successfully created network alert!', fg='green'))
-    click.echo(click.style('Alert ID: {}'.format(alert['id']), fg='cyan'))
+    click.secho('Successfully created network alert!', fg='green')
+    click.secho('Alert ID: {}'.format(alert['id']), fg='cyan')
 
 @alert.command(name='list')
 @click.option('--expired', help='Whether or not to show expired alerts.', default=True, type=bool)
@@ -69,7 +69,7 @@ def alert_list(expired):
             )
 
             if 'expired' in alert and alert['expired']:
-                click.echo(click.style('expired', fg='red'))
+                click.secho('expired', fg='red')
             else:
                 click.echo('')
     else:

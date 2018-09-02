@@ -28,9 +28,9 @@ def get_api_key():
 
 
 def escape_data(args):
-    # Ensure the provided string isn't unicode data
-    if not isinstance(args, str):
-        args = args.encode('ascii', 'replace')
+    # Make sure the string is unicode so the terminal can properly display it
+    # We do it using format() so it works across Python 2 and 3
+    args = u'{}'.format(args)
     return args.replace('\n', '\\n').replace('\r', '\\r').replace('\t', '\\t')
 
 

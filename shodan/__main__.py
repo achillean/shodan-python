@@ -418,17 +418,18 @@ def search(color, fields, limit, separator, query):
 
         # Loop over all the fields and print the banner as a row
         for field in fields:
-            tmp = ''
-            if field in banner and banner[field]:
-                field_type = type(banner[field])
+            tmp = u''
+            value = get_banner_field(banner, field)
+            if value:
+                field_type = type(value)
 
                 # If the field is an array then merge it together
                 if field_type == list:
-                    tmp = u';'.join(banner[field])
+                    tmp = u';'.join(value)
                 elif field_type in [int, float]:
-                    tmp = u'{}'.format(banner[field])
+                    tmp = u'{}'.format(value)
                 else:
-                    tmp = escape_data(banner[field])
+                    tmp = escape_data(value)
 
                 # Colorize certain fields if the user wants it
                 if color:
@@ -476,13 +477,7 @@ def stats(limit, facets, filename, query):
         click.echo('Top {} Results for Facet: {}'.format(len(results['facets'][facet]), facet))
 
         for item in results['facets'][facet]:
-            value = item['value']
-            if isinstance(value, basestring):
-                value = value.encode('ascii', errors='replace').decode('ascii')
-            else:
-                value = str(value)
-
-            click.echo(click.style(u'{:28s}'.format(value), fg='cyan'), nl=False)
+            click.echo(click.style(u'{:28s}'.format(item['value']), fg='cyan'), nl=False)
             click.echo(click.style(u'{:12,d}'.format(item['count']), fg='green'))
 
         click.echo('')

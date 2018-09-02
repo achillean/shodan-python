@@ -1,6 +1,12 @@
 CHANGELOG
 =========
 
+1.10.0
+------
+* New command **shodan org**: manage enterprise access to Shodan for your team
+* Improved unicode handling (#78)
+* Remove deprecated API wrapper for shodanhq.com/api
+
 1.9.1
 -----
 * The CHANGELOG is now part of the packages.

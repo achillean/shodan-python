@@ -51,6 +51,8 @@ def api_request(key, function, params=None, data=None, base_url='https://api.sho
                                      proxies=proxies)
             elif method.lower() == 'delete':
                 data = requests.delete(base_url + function, params=params, proxies=proxies)
+            elif method.lower() == 'put':
+                data = requests.put(base_url + function, params=params, proxies=proxies)
             else:
                 data = requests.get(base_url + function, params=params, proxies=proxies)
 

@@ -1,6 +1,10 @@
 CHANGELOG
 =========
 
+1.10.1
+------
+* Support PUT requests in the API request helper method
+
 1.10.0
 ------
 * New command **shodan org**: manage enterprise access to Shodan for your team

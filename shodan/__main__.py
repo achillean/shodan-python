@@ -477,7 +477,10 @@ def stats(limit, facets, filename, query):
         click.echo('Top {} Results for Facet: {}'.format(len(results['facets'][facet]), facet))
 
         for item in results['facets'][facet]:
-            click.echo(click.style(u'{:28s}'.format(item['value']), fg='cyan'), nl=False)
+            # Force the value to be a string - necessary because some facet values are numbers
+            value = u'{}'.format(item['value'])
+
+            click.echo(click.style(u'{:28s}'.format(value), fg='cyan'), nl=False)
             click.echo(click.style(u'{:12,d}'.format(item['count']), fg='green'))
 
         click.echo('')

@@ -41,6 +41,11 @@ def info():
     click.secho(organization['name'], fg='cyan')
     click.secho('Access Level: ', nl=False, dim=True)
     click.secho(humanize_api_plan(organization['upgrade_type']), fg='magenta')
+    
+    if organization['domains']:
+        click.secho('Authorized Domains: ', nl=False, dim=True)
+        click.echo(', '.join(organization['domains']))
+    
     click.echo('')
     click.secho('Administrators:', dim=True)
 

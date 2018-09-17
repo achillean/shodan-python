@@ -1,6 +1,10 @@
 CHANGELOG
 =========
 
+1.10.2
+------
+* Fix **shodan stats** formatting exception when faceting on **port**
+
 1.10.1
 ------
 * Support PUT requests in the API request helper method

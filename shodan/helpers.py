@@ -58,7 +58,7 @@ def api_request(key, function, params=None, data=None, base_url='https://api.sho
 
             # Exit out of the loop
             break
-        except:
+        except Exception:
             error = True
             tries += 1
 
@@ -69,7 +69,7 @@ def api_request(key, function, params=None, data=None, base_url='https://api.sho
     if data.status_code == 401:
         try:
             raise APIError(data.json()['error'])
-        except:
+        except (ValueError, KeyError):
             pass
         raise APIError('Invalid API key')
 
@@ -89,7 +89,7 @@ def api_request(key, function, params=None, data=None, base_url='https://api.sho
 
 def iterate_files(files, fast=False):
     """Loop over all the records of the provided Shodan output file(s)."""
-    from json import loads
+    loads = json.loads
     if fast:
         # Try to use ujson for parsing JSON if it's available and the user requested faster throughput
         # It's significantly faster at encoding/ decoding JSON but it doesn't support as

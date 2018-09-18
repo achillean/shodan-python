@@ -2,7 +2,7 @@
 from .base import Converter
 from ...helpers import iterate_files, get_ip
 
-from collections import defaultdict, MutableMapping
+from collections import defaultdict
 from xlsxwriter import Workbook
 
 
@@ -90,7 +90,7 @@ class ExcelConverter(Converter):
                     main_sheet.write(row, col, value)
                     col += 1
                 row += 1
-            except:
+            except Exception:
                 pass
             
             # Aggregate summary information
@@ -124,7 +124,7 @@ class ExcelConverter(Converter):
                 current_obj = ','.join([str(i) for i in current_obj])
             
             return current_obj
-        except:
+        except Exception:
             pass
     
         return ''

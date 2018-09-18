@@ -51,7 +51,7 @@ def get_banner_field(banner, flat_field):
         for field in fields:
             current_obj = current_obj[field]
         return current_obj
-    except:
+    except Exception:
         pass
 
     return None

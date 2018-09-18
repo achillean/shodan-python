@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+unreleased
+----------
+* Change bare 'except:' statements to 'except Exception:' or more specific ones
+* remove unused imports
+
 1.10.2
 ------
 * Fix **shodan stats** formatting exception when faceting on **port**

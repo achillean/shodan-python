@@ -53,5 +53,5 @@ class GeoJsonConverter(Converter):
             }""".format(ip, ip, lat, lon)
 
             self.fout.write(feature)
-        except:
+        except Exception:
             pass

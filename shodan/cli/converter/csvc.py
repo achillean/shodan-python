@@ -54,7 +54,7 @@ class CsvConverter(Converter):
                     value = self.banner_field(banner, field)
                     row.append(value)
                 writer.writerow(row)
-            except:
+            except Exception:
                 pass
     
     def banner_field(self, banner, flat_field):
@@ -71,7 +71,7 @@ class CsvConverter(Converter):
                 current_obj = ','.join([str(i) for i in current_obj])
             
             return current_obj
-        except:
+        except Exception:
             pass
     
         return ''

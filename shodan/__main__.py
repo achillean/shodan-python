@@ -26,17 +26,11 @@ The following commands are currently supported:
 """
 
 import click
-import collections
 import csv
-import datetime
-import gzip
-import itertools
 import os
 import os.path
 import shodan
 import shodan.helpers as helpers
-import socket
-import sys
 import threading
 import requests
 import time
@@ -584,7 +578,7 @@ def stream(color, fields, separator, limit, datadir, ports, quiet, timeout, stre
     if ports:
         try:
             stream_args = [int(item.strip()) for item in ports.split(',')]
-        except:
+        except ValueError:
             raise click.ClickException('Invalid list of ports')
 
     if alert:
@@ -683,7 +677,7 @@ def stream(color, fields, separator, limit, datadir, ports, quiet, timeout, stre
             quit = True
         except shodan.APIError as e:
             raise click.ClickException(e.value)
-        except:
+        except Exception:
             # For other errors lets just wait a bit and try to reconnect again
             time.sleep(1)
 

@@ -102,5 +102,5 @@ class KmlConverter(Converter):
             placemark += '</Placemark>'
 
             self.fout.write(placemark.encode('utf-8'))
-        except:
+        except Exception:
             pass

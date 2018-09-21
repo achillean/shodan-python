@@ -132,7 +132,7 @@ class AsciiMap(object):
                 # Not all cities can be encoded in ASCII so ignore any errors
                 try:
                     desc += ' {}'.format(banner['location']['city'])
-                except:
+                except Exception:
                     pass
             
             if 'tags' in banner and banner['tags']:

@@ -84,11 +84,20 @@ main.add_command(org)
 main.add_command(scan)
 
 
+CONVERTERS = {
+    'kml': KmlConverter,
+    'csv': CsvConverter,
+    'geo.json': GeoJsonConverter,
+    'images': ImagesConverter,
+    'xlsx': ExcelConverter,
+}
 @main.command()
 @click.argument('input', metavar='<input file>')
-@click.argument('format', metavar='<output format>', type=click.Choice(['kml', 'csv', 'geo.json', 'images', 'xlsx']))
+@click.argument('format', metavar='<output format>', type=click.Choice(CONVERTERS.keys()))
 def convert(input, format):
-    """Convert the given input data file into a different format.
+    """Convert the given input data file into a different format. The following file formats are supported:
+
+    kml, csv, geo.json, images, xlsx
 
     Example: shodan convert data.json.gz kml
     """
@@ -107,13 +116,7 @@ def convert(input, format):
     progress_bar_thread.start()
 
     # Initialize the file converter
-    converter = {
-        'kml': KmlConverter,
-        'csv': CsvConverter,
-        'geo.json': GeoJsonConverter,
-        'images': ImagesConverter,
-        'xlsx': ExcelConverter,
-    }.get(format)(fout)
+    converter = CONVERTERS.get(format)(fout)
 
     converter.process([input])
 

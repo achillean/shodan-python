@@ -1,6 +1,12 @@
 CHANGELOG
 =========
 
+unreleased
+----------
+* Change bare 'except:' statements to 'except Exception:' or more specific ones
+* remove unused imports
+* Convert line endings of `shodan/client.py` and `tests/test_shodan.py` to unix
+
 1.10.2
 ------
 * Fix **shodan stats** formatting exception when faceting on **port**

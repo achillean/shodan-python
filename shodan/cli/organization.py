@@ -1,7 +1,5 @@
 import click
-import requests
 import shodan
-import shodan.helpers as helpers
 
 from shodan.cli.helpers import get_api_key, humanize_api_plan
 

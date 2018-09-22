@@ -26,7 +26,7 @@ from .stream import Stream
 # pylint: disable=E1101
 try:
     requests.packages.urllib3.disable_warnings()
-except:
+except Exception:
     pass
 
 # Define a basestring type if necessary for Python3 compatibility
@@ -222,7 +222,7 @@ class Shodan:
                 data = self._session.delete(base_url + function, params=params)
             else:
                 data = self._session.get(base_url + function, params=params)
-        except:
+        except Exception:
             raise APIError('Unable to connect to Shodan')
 
         # Check that the API key wasn't rejected
@@ -246,7 +246,7 @@ class Shodan:
         # Parse the text into JSON
         try:
             data = data.json()
-        except:
+        except ValueError:
             raise APIError('Unable to parse JSON response')
 
         # Raise an exception if an error occurred
@@ -441,7 +441,7 @@ class Shodan:
                         return # exit out of the function
                 page += 1
                 tries = 0
-            except:
+            except Exception:
                 # We've retried several times but it keeps failing, so lets error out
                 if tries >= retries:
                     break

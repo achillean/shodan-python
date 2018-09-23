@@ -230,7 +230,7 @@ def download(limit, filename, query):
 
                     if count >= limit:
                         break
-        except:
+        except Exception:
             pass
 
         # Let the user know we're done

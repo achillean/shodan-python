@@ -98,7 +98,7 @@ def iterate_files(files, fast=False):
         # pylint: disable=E0401
         try:
             from ujson import loads
-        except:
+        except Exception:
             pass
 
     if isinstance(files, basestring):

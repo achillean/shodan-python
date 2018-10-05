@@ -80,8 +80,9 @@ def host_print_pretty(host, history=False):
             version = '({})'.format(banner['version'])
 
         click.echo(click.style('{:>7d}'.format(banner['port']), fg='cyan'), nl=False)
-        click.echo('/', nl=False)
-        click.echo(click.style('{} '.format(banner['transport']), fg='yellow'), nl=False)
+        if 'transport' in banner:
+            click.echo('/', nl=False)
+            click.echo(click.style('{} '.format(banner['transport']), fg='yellow'), nl=False)
         click.echo('{} {}'.format(product, version), nl=False)
 
         if history:

@@ -1,6 +1,14 @@
 CHANGELOG
 =========
 
+unreleased
+----------
+
+1.10.4
+------
+* Fix a bug when showing old banner records that don't have the "transport" property
+* Code quality improvements (bare excepts)
+
 1.10.3
 ------
 * Change bare 'except:' statements to 'except Exception:' or more specific ones

@@ -177,7 +177,7 @@ class AsciiMap(object):
                     self.window.addstr(row, 1, det_show, attrs)
                     row += 1
                     items_to_show -= 1
-                except Exeception:
+                except Exception:
                     # FIXME: check window size before addstr()
                     break
         self.window.overwrite(target)

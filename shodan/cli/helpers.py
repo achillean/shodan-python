@@ -10,6 +10,11 @@ import sys
 
 from .settings import SHODAN_CONFIG_DIR
 
+try:
+    basestring            # Python 2
+except NameError:
+    basestring = (str, )  # Python 3
+
 def get_api_key():
     '''Returns the API key of the current logged-in user.'''
     shodan_dir = os.path.expanduser(SHODAN_CONFIG_DIR)

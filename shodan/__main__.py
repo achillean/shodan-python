@@ -333,7 +333,7 @@ def parse(color, fields, filters, filename, separator, filenames):
             helpers.write_banner(fout, banner)
 
         # Loop over all the fields and print the banner as a row
-        for field in fields:
+        for i, field in enumerate(fields):
             tmp = u''
             value = get_banner_field(banner, field)
             if value:
@@ -351,9 +351,10 @@ def parse(color, fields, filters, filename, separator, filenames):
                 if color:
                     tmp = click.style(tmp, fg=COLORIZE_FIELDS.get(field, 'white'))
 
-                # Add the field information to the row
-                row += tmp
-            row += separator
+            # Add the field information to the row
+            if i > 0:
+                row += separator
+            row += tmp 
 
         click.echo(row)
 

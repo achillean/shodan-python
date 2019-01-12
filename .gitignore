@@ -9,3 +9,5 @@ tmp/*
 MANIFEST
 .vscode/
 PKG-INFO
+venv/*
+.idea/*

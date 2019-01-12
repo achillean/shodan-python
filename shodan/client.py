@@ -176,7 +176,7 @@ class Shodan:
         :param key: The Shodan API key.
         :type key: str
         :param proxies: A proxies array for the requests library, e.g. {'https': 'your proxy'}
-        :type key: dict
+        :type proxies: dict
         """
         self.api_key = key
         self.base_url = 'https://api.shodan.io'

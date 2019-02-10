@@ -24,9 +24,12 @@ class CsvConverter(Converter):
         'os',
         'asn',
         'port',
+        'tags',
+        'timestamp',
         'transport',
         'product',
         'version',
+        'vulns',
         
         'ssl.cipher.version',
         'ssl.cipher.bits',
@@ -48,6 +51,11 @@ class CsvConverter(Converter):
         writer.writerow(self.fields)
         
         for banner in iterate_files(files):
+            # The "vulns" property can't be nicely flattened as-is so we turn
+            # it into a list before processing the banner.
+            if 'vulns' in banner:
+                banner['vulns'] = banner['vulns'].keys()
+            
             try:
                 row = []
                 for field in self.fields:

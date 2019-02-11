@@ -24,13 +24,13 @@ class Threatnet:
             try:
                 req = requests.get(self.base_url + name, params={'key': self.parent.api_key},
                                    stream=True, proxies=self.proxies)
-            except:
+            except Exception:
                 raise APIError('Unable to contact the Shodan Streaming API')
 
             if req.status_code != 200:
                 try:
                     raise APIError(req.json()['error'])
-                except:
+                except Exception:
                     pass
                 raise APIError('Invalid API key or you do not have access to the Streaming API')
             return req
@@ -65,4 +65,3 @@ class Threatnet:
         self.api_key = key
         self.base_url = 'https://api.shodan.io'
         self.stream = self.Stream(self)
-

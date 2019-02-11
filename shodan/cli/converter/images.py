@@ -14,7 +14,7 @@ class ImagesConverter(Converter):
     # special code in the Shodan CLI that relies on the "dirname" property to let
     # the user know where the images have been stored.
     dirname = None
-    
+
     def process(self, files):
         # Get the filename from the already-open file handle and use it as
         # the directory name to store the images.

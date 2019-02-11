@@ -22,7 +22,7 @@ def add(silent, user):
         api.org.add_member(user, notify=not silent)
     except shodan.APIError as e:
         raise click.ClickException(e.value)
-    
+
     click.secho('Successfully added the new member', fg='green')
 
 
@@ -39,11 +39,11 @@ def info():
     click.secho(organization['name'], fg='cyan')
     click.secho('Access Level: ', nl=False, dim=True)
     click.secho(humanize_api_plan(organization['upgrade_type']), fg='magenta')
-    
+
     if organization['domains']:
         click.secho('Authorized Domains: ', nl=False, dim=True)
         click.echo(', '.join(organization['domains']))
-    
+
     click.echo('')
     click.secho('Administrators:', dim=True)
 
@@ -51,8 +51,8 @@ def info():
         click.echo(u' > {:30}\t{:30}'.format(
             click.style(admin['username'], fg='yellow'),
             admin['email'])
-            )
-    
+        )
+
     click.echo('')
     if organization['members']:
         click.secho('Members:', dim=True)
@@ -76,5 +76,5 @@ def remove(user):
         api.org.remove_member(user)
     except shodan.APIError as e:
         raise click.ClickException(e.value)
-    
+
     click.secho('Successfully removed the member', fg='green')

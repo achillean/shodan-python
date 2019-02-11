@@ -64,9 +64,9 @@ def host_print_pretty(host, history=False):
         for port in ports:
             banner = {
                 'port': port,
-                'transport': 'tcp', # All the filtered services use TCP
-                'timestamp': host['data'][-1]['timestamp'], # Use the timestamp of the oldest banner
-                'placeholder': True, # Don't store this banner when the file is saved
+                'transport': 'tcp',  # All the filtered services use TCP
+                'timestamp': host['data'][-1]['timestamp'],  # Use the timestamp of the oldest banner
+                'placeholder': True,  # Don't store this banner when the file is saved
             }
             host['data'].append(banner)
 
@@ -94,7 +94,7 @@ def host_print_pretty(host, history=False):
         # Show optional ssl info
         if 'ssl' in banner:
             if 'versions' in banner['ssl'] and banner['ssl']['versions']:
-                click.echo('\t|-- SSL Versions: {}'.format(', '.join([version for version in sorted(banner['ssl']['versions']) if not version.startswith('-')])))
+                click.echo('\t|-- SSL Versions: {}'.format(', '.join([item for item in sorted(banner['ssl']['versions']) if not version.startswith('-')])))
             if 'dhparams' in banner['ssl'] and banner['ssl']['dhparams']:
                 click.echo('\t|-- Diffie-Hellman Parameters:')
                 click.echo('\t\t{:15s}{}\n\t\t{:15s}{}'.format('Bits:', banner['ssl']['dhparams']['bits'], 'Generator:', banner['ssl']['dhparams']['generator']))

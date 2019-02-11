@@ -108,14 +108,14 @@ class AsciiMap(object):
         TODO: filter out stuff that doesn't fit
         TODO: make it possible to use "zoomed" maps
         """
-        width = (self.corners[3]-self.corners[1])
-        height = (self.corners[2]-self.corners[0])
+        width = (self.corners[3] - self.corners[1])
+        height = (self.corners[2] - self.corners[0])
 
         # change to 0-180, 0-360
-        abs_lat = -lat+90
-        abs_lon = lon+180
-        x = (abs_lon/360.0)*width + self.corners[1]
-        y = (abs_lat/180.0)*height + self.corners[0]
+        abs_lat = -lat + 90
+        abs_lon = lon + 180
+        x = (abs_lon / 360.0) * width + self.corners[1]
+        y = (abs_lat / 180.0) * height + self.corners[0]
         return int(x), int(y)
 
     def set_data(self, data):
@@ -155,7 +155,7 @@ class AsciiMap(object):
         self.window.addstr(0, 0, self.map)
 
         # FIXME: position to be defined in map config?
-        row = self.corners[2]-6
+        row = self.corners[2] - 6
         items_to_show = 5
         for lat, lon, char, desc, attrs, color in self.data:
             # to make this work almost everywhere. see http://docs.python.org/2/library/curses.html
@@ -256,6 +256,7 @@ def main(argv=None):
 
     api = Shodan(get_api_key())
     return launch_map(api)
+
 
 if __name__ == '__main__':
     import sys

@@ -347,6 +347,16 @@ class Shodan:
 
         return self._request('/shodan/scan', params, method='post')
 
+    def scans(self, page=1):
+        """Get a list of scans submitted
+
+        :param page: Page through the list of scans 100 results at a time
+        :type page: int
+        """
+        return self._request('/shodan/scans', {
+            'page': page,
+        })
+
     def scan_internet(self, port, protocol):
         """Scan a network using Shodan
 
@@ -438,7 +448,7 @@ class Shodan:
                     try:
                         yield banner
                     except GeneratorExit:
-                        return # exit out of the function
+                        return  # exit out of the function
                 page += 1
                 tries = 0
             except Exception:
@@ -447,7 +457,7 @@ class Shodan:
                     break
 
                 tries += 1
-                time.sleep(1.0) # wait 1 second if the search errored out for some reason
+                time.sleep(1.0)  # wait 1 second if the search errored out for some reason
 
     def search_tokens(self, query):
         """Returns information about the search query itself (filters used etc.)
@@ -507,8 +517,8 @@ class Shodan:
     def queries_tags(self, size=10):
         """Search the directory of saved search queries in Shodan.
 
-        :param query: The number of tags to return
-        :type page: int
+        :param size: The number of tags to return
+        :type size: int
 
         :returns: A list of tags.
         """
@@ -518,12 +528,14 @@ class Shodan:
         return self._request('/shodan/query/tags', args)
 
     def create_alert(self, name, ip, expires=0):
-        """Search the directory of saved search queries in Shodan.
+        """Create a network alert/ private firehose for the specified IP range(s)
 
-        :param query: The number of tags to return
-        :type page: int
+        :param name: Name of the alert
+        :type name: str
+        :param ip: Network range(s) to monitor
+        :type ip: str OR list of str
 
-        :returns: A list of tags.
+        :returns: A dict describing the alert
         """
         data = {
             'name': name,
@@ -547,8 +559,7 @@ class Shodan:
 
         response = api_request(self.api_key, func, params={
             'include_expired': include_expired,
-            },
-            proxies=self._session.proxies)
+        }, proxies=self._session.proxies)
 
         return response
 
@@ -561,3 +572,17 @@ class Shodan:
 
         return response
 
+    def alert_triggers(self):
+        """Return a list of available triggers that can be enabled for alerts.
+
+        :returns: A list of triggers
+        """
+        return self._request('/shodan/alert/triggers', {})
+
+    def enable_alert_trigger(self, aid, trigger):
+        """Enable the given trigger on the alert."""
+        return self._request('/shodan/alert/{}/trigger/{}'.format(aid, trigger), {}, method='put')
+
+    def disable_alert_trigger(self, aid, trigger):
+        """Disable the given trigger on the alert."""
+        return self._request('/shodan/alert/{}/trigger/{}'.format(aid, trigger), {}, method='delete')

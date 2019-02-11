@@ -17,6 +17,35 @@ def scan():
     pass
 
 
+@scan.command(name='list')
+def scan_list():
+    """Show recently launched scans"""
+    key = get_api_key()
+
+    # Get the list
+    api = shodan.Shodan(key)
+    try:
+        scans = api.scans()
+    except shodan.APIError as e:
+        raise click.ClickException(e.value)
+
+    if len(scans) > 0:
+        click.echo(u'# {} Scans Total - Showing 10 most recent scans:'.format(scans['total']))
+        click.echo(u'# {:20} {:<15} {:<10} {:<15s}'.format('Scan ID', 'Status', 'Size', 'Timestamp'))
+        # click.echo('#' * 65)
+        for scan in scans['matches'][:10]:
+            click.echo(
+                u'{:31} {:<24} {:<10} {:<15s}'.format(
+                    click.style(scan['id'], fg='yellow'),
+                    click.style(scan['status'], fg='cyan'),
+                    scan['size'],
+                    scan['created']
+                )
+            )
+    else:
+        click.echo("You haven't yet launched any scans.")
+
+
 @scan.command(name='internet')
 @click.option('--quiet', help='Disable the printing of information to the screen.', default=False, is_flag=True)
 @click.argument('port', type=int)
@@ -58,10 +87,9 @@ def scan_internet(quiet, port, protocol):
 
                             if not quiet:
                                 click.echo('{0:<40} {1:<20} {2}'.format(
-                                        click.style(helpers.get_ip(banner), fg=COLORIZE_FIELDS['ip_str']),
-                                        click.style(str(banner['port']), fg=COLORIZE_FIELDS['port']),
-                                        ';'.join(banner['hostnames'])
-                                    )
+                                    click.style(helpers.get_ip(banner), fg=COLORIZE_FIELDS['ip_str']),
+                                    click.style(str(banner['port']), fg=COLORIZE_FIELDS['port']),
+                                    ';'.join(banner['hostnames']))
                                 )
                     except shodan.APIError as e:
                         # We stop waiting for results if the scan has been processed by the crawlers and

@@ -49,6 +49,13 @@ from shodan.cli.host import HOST_PRINT
 from click_plugins import with_plugins
 from pkg_resources import iter_entry_points
 
+# Large subcommands are stored in separate modules
+from shodan.cli.alert import alert
+from shodan.cli.data import data
+from shodan.cli.organization import org
+from shodan.cli.scan import scan
+
+
 # Make "-h" work like "--help"
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
@@ -58,7 +65,6 @@ try:
 except NameError:
     basestring = str
 
-
 # Define the main entry point for all of our commands
 # and expose a way for 3rd-party plugins to tie into the Shodan CLI.
 @with_plugins(iter_entry_points('shodan.cli.plugins'))
@@ -67,11 +73,7 @@ def main():
     pass
 
 
-# Large subcommands are stored in separate modules
-from shodan.cli.alert import alert
-from shodan.cli.data import data
-from shodan.cli.organization import org
-from shodan.cli.scan import scan
+# Setup the large subcommands
 main.add_command(alert)
 main.add_command(data)
 main.add_command(org)
@@ -151,6 +153,7 @@ def init(key):
 
     os.chmod(keyfile, 0o600)
 
+
 @main.command()
 @click.argument('query', metavar='<search query>', nargs=-1)
 def count(query):
@@ -203,7 +206,7 @@ def download(limit, filename, query):
     try:
         total = api.count(query)['total']
         info = api.info()
-    except:
+    except Exception:
         raise click.ClickException('The Shodan API is unresponsive at the moment, please try again later.')
 
     # Print some summary information about the download request
@@ -275,7 +278,6 @@ def host(format, history, filename, save, ip):
         raise click.ClickException(e.value)
 
 
-
 @main.command()
 def info():
     """Shows general information about your account"""
@@ -307,7 +309,6 @@ def parse(color, fields, filters, filename, separator, filenames):
         raise click.ClickException('Please define at least one property to show')
 
     has_filters = len(filters) > 0
-
 
     # Setup the output file handle
     fout = None
@@ -354,7 +355,7 @@ def parse(color, fields, filters, filename, separator, filenames):
             # Add the field information to the row
             if i > 0:
                 row += separator
-            row += tmp 
+            row += tmp
 
         click.echo(row)
 
@@ -520,7 +521,7 @@ def stats(limit, facets, filename, query):
                 if len(values) > counter:
                     has_items = True
                     row[pos] = values[counter]['value']
-                    row[pos+1] = values[counter]['count']
+                    row[pos + 1] = values[counter]['count']
 
                 pos += 2
 
@@ -546,7 +547,7 @@ def stats(limit, facets, filename, query):
 @click.option('--asn', help='A comma-separated list of ASNs to grab data on.', default=None, type=str)
 @click.option('--alert', help='The network alert ID or "all" to subscribe to all network alerts on your account.', default=None, type=str)
 @click.option('--compresslevel', help='The gzip compression level (0-9; 0 = no compression, 9 = most compression', default=9, type=int)
-def stream(color, fields, separator, limit, datadir, ports, quiet, timeout, streamer, countries,  asn, alert, compresslevel):
+def stream(color, fields, separator, limit, datadir, ports, quiet, timeout, streamer, countries, asn, alert, compresslevel):
     """Stream data in real-time."""
     # Setup the Shodan API
     key = get_api_key()
@@ -642,9 +643,9 @@ def stream(color, fields, separator, limit, datadir, ports, quiet, timeout, stre
                 if datadir:
                     cur_time = timestr()
                     if cur_time != last_time:
-                            last_time = cur_time
-                            fout.close()
-                            fout = open_streaming_file(datadir, last_time)
+                        last_time = cur_time
+                        fout.close()
+                        fout = open_streaming_file(datadir, last_time)
                     helpers.write_banner(fout, banner)
 
                 # Print the banner information to stdout
@@ -707,7 +708,7 @@ def honeyscore(ip):
             click.echo(click.style('Not a honeypot', fg='green'))
 
         click.echo('Score: {}'.format(score))
-    except:
+    except Exception:
         raise click.ClickException('Unable to calculate honeyscore')
 
 
@@ -725,6 +726,7 @@ def radar():
         raise click.ClickException(e.value)
     except Exception as e:
         raise click.ClickException(u'{}'.format(e))
+
 
 if __name__ == '__main__':
     main()

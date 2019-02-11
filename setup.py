@@ -6,19 +6,19 @@ DEPENDENCIES = open('requirements.txt', 'r').read().split('\n')
 README = open('README.rst', 'r').read()
 
 setup(
-    name = 'shodan',
-    version = '1.10.4',
-    description = 'Python library and command-line utility for Shodan (https://developer.shodan.io)',
-    long_description = README,
-    long_description_content_type = 'text/x-rst',
-    author = 'John Matherly',
-    author_email = 'jmath@shodan.io',
-    url = 'http://github.com/achillean/shodan-python/tree/master',
-    packages = ['shodan', 'shodan.cli', 'shodan.cli.converter'],
-    entry_points = {'console_scripts': ['shodan = shodan.__main__:main']},
-    install_requires = DEPENDENCIES,
-    keywords = ['security', 'network'],
-    classifiers = [
+    name='shodan',
+    version='1.10.4',
+    description='Python library and command-line utility for Shodan (https://developer.shodan.io)',
+    long_description=README,
+    long_description_content_type='text/x-rst',
+    author='John Matherly',
+    author_email='jmath@shodan.io',
+    url='http://github.com/achillean/shodan-python/tree/master',
+    packages=['shodan', 'shodan.cli', 'shodan.cli.converter'],
+    entry_points={'console_scripts': ['shodan=shodan.__main__:main']},
+    install_requires=DEPENDENCIES,
+    keywords=['security', 'network'],
+    classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',

@@ -3,6 +3,12 @@ CHANGELOG
 
 unreleased
 ----------
+* New command **shodan scan list** to list recently launched scans
+* New command **shodan alert triggers** to list the available notification triggers
+* New command **shodan alert enable** to enable a notification trigger
+* New command **shodan alert disable** to disable a notification trigger
+* Include timestamp, vulns and tags in CSV converter (#85)
+* Code quality improvements
 
 1.10.4
 ------

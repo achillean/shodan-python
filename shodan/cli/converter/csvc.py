@@ -30,7 +30,7 @@ class CsvConverter(Converter):
         'product',
         'version',
         'vulns',
-        
+
         'ssl.cipher.version',
         'ssl.cipher.bits',
         'ssl.cipher.name',
@@ -39,23 +39,23 @@ class CsvConverter(Converter):
         'ssl.cert.serial',
         'ssl.cert.fingerprint.sha1',
         'ssl.cert.fingerprint.sha256',
-        
+
         'html',
         'title',
     ]
-    
+
     def process(self, files):
         writer = csv_writer(self.fout, dialect=excel)
-        
+
         # Write the header
         writer.writerow(self.fields)
-        
+
         for banner in iterate_files(files):
             # The "vulns" property can't be nicely flattened as-is so we turn
             # it into a list before processing the banner.
             if 'vulns' in banner:
                 banner['vulns'] = banner['vulns'].keys()
-            
+
             try:
                 row = []
                 for field in self.fields:
@@ -64,26 +64,26 @@ class CsvConverter(Converter):
                 writer.writerow(row)
             except Exception:
                 pass
-    
+
     def banner_field(self, banner, flat_field):
         # The provided field is a collapsed form of the actual field
         fields = flat_field.split('.')
-    
+
         try:
             current_obj = banner
             for field in fields:
                 current_obj = current_obj[field]
-            
+
             # Convert a list into a concatenated string
             if isinstance(current_obj, list):
                 current_obj = ','.join([str(i) for i in current_obj])
-            
+
             return current_obj
         except Exception:
             pass
-    
+
         return ''
-    
+
     def flatten(self, d, parent_key='', sep='.'):
         items = []
         for k, v in d.items():

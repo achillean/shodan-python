@@ -19,7 +19,7 @@ def create_facet_string(facets):
         if isinstance(facet, basestring):
             facet_str += facet
         else:
-            facet_str += '%s:%s'  % (facet[0], facet[1])
+            facet_str += '{}:{}'.format(facet[0], facet[1])
         facet_str += ','
     return facet_str[:-1]
 
@@ -76,7 +76,7 @@ def api_request(key, function, params=None, data=None, base_url='https://api.sho
     # Parse the text into JSON
     try:
         data = data.json()
-    except:
+    except Exception:
         raise APIError('Unable to parse JSON response')
 
     # Raise an exception if an error occurred
@@ -119,6 +119,7 @@ def iterate_files(files, fast=False):
             banner = loads(line)
             yield banner
 
+
 def get_screenshot(banner):
     if 'opts' in banner and 'screenshot' in banner['opts']:
         return banner['opts']['screenshot']
@@ -159,14 +160,13 @@ def humanize_bytes(bytes, precision=1):
     >>> humanize_bytes(1024*1234*1111,1)
     '1.3 GB'
     """
-
     if bytes == 1:
         return '1 byte'
     if bytes < 1024:
         return '%.*f %s' % (precision, bytes, "bytes")
 
     suffixes = ['KB', 'MB', 'GB', 'TB', 'PB']
-    multiple = 1024.0    #.0 force float on python 2
+    multiple = 1024.0  # .0 to force float on python 2
     for suffix in suffixes:
         bytes /= multiple
         if bytes < multiple:

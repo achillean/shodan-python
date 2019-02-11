@@ -2,38 +2,38 @@
 from .base import Converter
 from ...helpers import iterate_files
 
+
 class KmlConverter(Converter):
-    
+
     def header(self):
         self.fout.write("""<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>""")
-    
+
     def footer(self):
         self.fout.write("""</Document></kml>""")
-    
+
     def process(self, files):
         # Write the header
         self.header()
-        
+
         hosts = {}
         for banner in iterate_files(files):
             ip = banner.get('ip_str', banner.get('ipv6', None))
             if not ip:
                 continue
-    
+
             if ip not in hosts:
                 hosts[ip] = banner
                 hosts[ip]['ports'] = []
-    
+
             hosts[ip]['ports'].append(banner['port'])
-    
+
         for ip, host in iter(hosts.items()):
             self.write(host)
-        
+
         self.footer()
-            
-    
+
     def write(self, host):
         try:
             ip = host.get('ip_str', host.get('ipv6', None))

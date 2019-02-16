@@ -113,7 +113,8 @@ def iterate_files(files, fast=False):
 
         for line in fin:
             # Ensure the line has been decoded into a string to prevent errors w/ Python3
-            line = line.decode('utf-8')
+            if not isinstance(line, basestring):
+                line = line.decode('utf-8')
 
             # Convert the JSON into a native Python object
             banner = loads(line)

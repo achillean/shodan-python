@@ -71,6 +71,10 @@ def alert_list(expired):
                 nl=False
             )
 
+            if 'triggers' in alert and alert['triggers']:
+                click.secho('Triggers: ', fg='magenta', nl=False)
+                click.echo(', '.join(alert['triggers'].keys()), nl=False)
+
             if 'expired' in alert and alert['expired']:
                 click.secho('expired', fg='red')
             else:

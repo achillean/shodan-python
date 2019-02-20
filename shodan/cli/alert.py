@@ -1,6 +1,7 @@
 import click
 import shodan
 
+from operator import itemgetter
 from shodan.cli.helpers import get_api_key
 
 
@@ -43,6 +44,42 @@ def alert_create(name, netblock):
 
     click.secho('Successfully created network alert!', fg='green')
     click.secho('Alert ID: {}'.format(alert['id']), fg='cyan')
+
+
+@alert.command(name='info')
+@click.argument('alert', metavar='<alert id>')
+def alert_info(alert):
+    """Show information about a specific alert"""
+    key = get_api_key()
+    api = shodan.Shodan(key)
+
+    try:
+        info = api.alerts(aid=alert)
+    except shodan.APIError as e:
+        raise click.ClickException(e.value)
+
+    click.secho(info['name'], fg='cyan')
+    click.secho('Created: ', nl=False, dim=True)
+    click.secho(info['created'], fg='magenta')
+
+    click.secho('Notifications: ', nl=False, dim=True)
+    if 'triggers' in info and info['triggers']:
+        click.secho('enabled', fg='green')
+    else:
+        click.echo('disabled')
+
+    click.echo('')
+    click.secho('Network Range(s):', dim=True)
+
+    for network in info['filters']['ip']:
+        click.echo(u' > {}'.format(click.style(network, fg='yellow')))
+
+    click.echo('')
+    if 'triggers' in info and info['triggers']:
+        click.secho('Triggers:', dim=True)
+        for trigger in info['triggers']:
+            click.echo(u' > {}'.format(click.style(trigger, fg='yellow')))
+        click.echo('')
 
 
 @alert.command(name='list')
@@ -100,7 +137,7 @@ def alert_remove(alert_id):
 
 @alert.command(name='triggers')
 def alert_list_triggers():
-    """List all the available triggers"""
+    """List the available notification triggers"""
     key = get_api_key()
 
     # Get the list
@@ -111,16 +148,20 @@ def alert_list_triggers():
         raise click.ClickException(e.value)
 
     if len(results) > 0:
-        click.echo(u'# {:14} {:<21} {:<15s}'.format('Name', 'Description', 'Rule'))
+        click.secho('The following triggers can be enabled on alerts:', dim=True)
+        click.echo('')
 
-        for trigger in results:
-            click.echo(
-                u'{:16} {:<30} {:<35} '.format(
-                    click.style(trigger['name'], fg='yellow'),
-                    click.style(trigger['description'], fg='cyan'),
-                    trigger['rule']
-                )
-            )
+        for trigger in sorted(results, key=itemgetter('name')):
+            click.secho('{:<12} '.format('Name'), dim=True, nl=False)
+            click.secho(trigger['name'], fg='yellow')
+
+            click.secho('{:<12} '.format('Description'), dim=True, nl=False)
+            click.secho(trigger['description'], fg='cyan')
+
+            click.secho('{:<12} '.format('Rule'), dim=True, nl=False)
+            click.echo(trigger['rule'])
+
+            click.echo('')
     else:
         click.echo("No triggers currently available.")
 
@@ -139,7 +180,7 @@ def alert_enable_trigger(alert_id, trigger):
     except shodan.APIError as e:
         raise click.ClickException(e.value)
 
-    click.secho('Successfully enabled the trigger {}'.format(trigger), color='green')
+    click.secho('Successfully enabled the trigger: {}'.format(trigger), fg='green')
 
 
 @alert.command(name='disable')
@@ -156,4 +197,4 @@ def alert_disable_trigger(alert_id, trigger):
     except shodan.APIError as e:
         raise click.ClickException(e.value)
 
-    click.secho('Successfully disabled the trigger {}'.format(trigger), color='green')
+    click.secho('Successfully disabled the trigger: {}'.format(trigger), fg='green')

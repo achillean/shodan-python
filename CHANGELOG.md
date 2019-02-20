@@ -1,14 +1,17 @@
 CHANGELOG
 =========
 
-unreleased
+1.11.0
 ----------
 * New command **shodan scan list** to list recently launched scans
 * New command **shodan alert triggers** to list the available notification triggers
 * New command **shodan alert enable** to enable a notification trigger
 * New command **shodan alert disable** to disable a notification trigger
+* New command **shodan alert info** to show details of a specific alert
 * Include timestamp, vulns and tags in CSV converter (#85)
+* Fixed bug that caused an exception when parsing uncompressed data files in Python3
 * Code quality improvements
+* Thank you for contributions from @wagner-certat, @cclauss, @opt9, @voldmar and Antoine Neuenschwander
 
 1.10.4
 ------

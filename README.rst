@@ -18,6 +18,7 @@ Features
 - `Fast/ bulk IP lookups <https://help.shodan.io/developer-fundamentals/looking-up-ip-info>`_
 - Streaming API support for real-time consumption of Shodan firehose
 - `Network alerts (aka private firehose) <https://help.shodan.io/guides/how-to-monitor-network>`_
+- `Manage Email Notifications <https://asciinema.org/a/7WvyDtNxn0YeNU70ozsxvXDmL>`_
 - Exploit search API fully implemented
 - Bulk data downloads
 - `Command-line interface <https://cli.shodan.io>`_

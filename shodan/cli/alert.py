@@ -30,15 +30,15 @@ def alert_clear():
 
 @alert.command(name='create')
 @click.argument('name', metavar='<name>')
-@click.argument('netblock', metavar='<netblock>')
-def alert_create(name, netblock):
+@click.argument('netblocks', metavar='<netblocks>', nargs=-1)
+def alert_create(name, netblocks):
     """Create a network alert to monitor an external network"""
     key = get_api_key()
 
     # Get the list
     api = shodan.Shodan(key)
     try:
-        alert = api.create_alert(name, netblock)
+        alert = api.create_alert(name, netblocks)
     except shodan.APIError as e:
         raise click.ClickException(e.value)
 

@@ -1,8 +1,12 @@
 CHANGELOG
 =========
 
+1.11.1
+------
+* Allow a single network alert to monitor multiple IP ranges (#93)
+
 1.11.0
-----------
+------
 * New command **shodan scan list** to list recently launched scans
 * New command **shodan alert triggers** to list the available notification triggers
 * New command **shodan alert enable** to enable a notification trigger

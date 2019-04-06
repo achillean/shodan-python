@@ -1,6 +1,10 @@
 CHANGELOG
 =========
 
+1.12.0
+------
+* Add new methods to ignore/ unignore trigger notifications
+
 1.11.1
 ------
 * Allow a single network alert to monitor multiple IP ranges (#93)

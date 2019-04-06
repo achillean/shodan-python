@@ -586,3 +586,11 @@ class Shodan:
     def disable_alert_trigger(self, aid, trigger):
         """Disable the given trigger on the alert."""
         return self._request('/shodan/alert/{}/trigger/{}'.format(aid, trigger), {}, method='delete')
+
+    def ignore_alert_trigger_notification(self, aid, trigger, ip, port):
+        """Ignore trigger notifications for the provided IP and port."""
+        return self._request('/shodan/alert/{}/trigger/{}/ignore/{}:{}'.format(aid, trigger, ip, port), {}, method='put')
+
+    def unignore_alert_trigger_notification(self, aid, trigger, ip, port):
+        """Re-enable trigger notifications for the provided IP and port"""
+        return self._request('/shodan/alert/{}/trigger/{}/ignore/{}:{}'.format(aid, trigger, ip, port), {}, method='delete')

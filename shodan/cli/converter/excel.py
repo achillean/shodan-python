@@ -109,6 +109,8 @@ class ExcelConverter(Converter):
             summary_sheet.write(row, col, key)
             summary_sheet.write(row, col + 1, value)
             row += 1
+        
+        workbook.close()
 
     def banner_field(self, banner, flat_field):
         # The provided field is a collapsed form of the actual field

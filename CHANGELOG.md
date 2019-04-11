@@ -1,6 +1,10 @@
 CHANGELOG
 =========
 
+1.12.1
+------
+* Fix Excel file conversion that resulted in empty .xlsx files
+
 1.12.0
 ------
 * Add new methods to ignore/ unignore trigger notifications

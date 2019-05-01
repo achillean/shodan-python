@@ -190,6 +190,7 @@ class Shodan:
         self._session = requests.Session()
         if proxies:
             self._session.proxies.update(proxies)
+            self._session.trust_env = False
 
     def _request(self, function, params, service='shodan', method='get'):
         """General-purpose function to create web requests to SHODAN.

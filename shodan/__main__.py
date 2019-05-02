@@ -125,6 +125,31 @@ def convert(input, format):
         click.echo(click.style('\rSuccessfully created new file: {}'.format(filename), fg='green'))
 
 
+@main.command(name='domain')
+@click.argument('domain', metavar='<domain>')
+def domain_info(domain):
+    """View all available information for a domain"""
+    key = get_api_key()
+    api = shodan.Shodan(key)
+
+    try:
+        info = api.dns.domain_info(domain)
+    except shodan.APIError as e:
+        raise click.ClickException(e.value)
+
+    click.secho(info['domain'].upper(), fg='green')
+    
+    click.echo('')
+    for record in info['data']:
+        click.echo(
+            '{:32}  {:14}  {}'.format(
+                click.style(record['subdomain'], fg='cyan'),
+                click.style(record['type'], fg='yellow'),
+                record['value']
+            )
+        )
+
+
 @main.command()
 @click.argument('key', metavar='<api key>')
 def init(key):

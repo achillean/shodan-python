@@ -64,6 +64,16 @@ class Shodan:
             """
             return self.parent._request('/shodan/data/{}'.format(dataset), {})
 
+    class Dns:
+
+        def __init__(self, parent):
+            self.parent = parent
+
+        def domain_info(self, domain):
+            """Grab the DNS information for a domain.
+            """
+            return self.parent._request('/dns/domain/{}'.format(domain), {})
+
     class Tools:
 
         def __init__(self, parent):
@@ -182,6 +192,7 @@ class Shodan:
         self.base_url = 'https://api.shodan.io'
         self.base_exploits_url = 'https://exploits.shodan.io'
         self.data = self.Data(self)
+        self.dns = self.Dns(self)
         self.exploits = self.Exploits(self)
         self.labs = self.Labs(self)
         self.org = self.Organization(self)

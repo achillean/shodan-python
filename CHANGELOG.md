@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+1.13.0
+------
+* New command **shodan domain** to lookup a domain in Shodan's DNS database
+* Override environment configured settings if explicit proxy settings are supplied (@cudeso)
+
 1.12.1
 ------
 * Fix Excel file conversion that resulted in empty .xlsx files

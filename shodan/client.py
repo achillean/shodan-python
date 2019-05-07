@@ -443,7 +443,7 @@ class Shodan:
         :param minify: (optional) Whether to minify the banner and only return the important data
         :type minify: bool
         :param retries: (optional) How often to retry the search in case it times out
-        :type minify: int
+        :type retries: int
 
         :returns: A search cursor that can be used as an iterator/ generator.
         """
@@ -466,7 +466,7 @@ class Shodan:
             except Exception:
                 # We've retried several times but it keeps failing, so lets error out
                 if tries >= retries:
-                    break
+                    raise APIError('Retry limit reached ({:d})'.format(retries))
 
                 tries += 1
                 time.sleep(1.0)  # wait 1 second if the search errored out for some reason

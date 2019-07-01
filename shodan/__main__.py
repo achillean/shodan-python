@@ -29,6 +29,7 @@ import click
 import csv
 import os
 import os.path
+import pkg_resources
 import shodan
 import shodan.helpers as helpers
 import threading
@@ -138,7 +139,7 @@ def domain_info(domain):
         raise click.ClickException(e.value)
 
     click.secho(info['domain'].upper(), fg='green')
-    
+
     click.echo('')
     for record in info['data']:
         click.echo(
@@ -751,6 +752,12 @@ def radar():
         raise click.ClickException(e.value)
     except Exception as e:
         raise click.ClickException(u'{}'.format(e))
+
+
+@main.command()
+def version():
+    """Print version of this tool."""
+    print(pkg_resources.get_distribution("shodan").version)
 
 
 if __name__ == '__main__':

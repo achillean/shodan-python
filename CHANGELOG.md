@@ -1,6 +1,10 @@
 CHANGELOG
 =========
 
+unreleased
+----------
+* New command **shodan version** (#104).
+
 1.13.0
 ------
 * New command **shodan domain** to lookup a domain in Shodan's DNS database

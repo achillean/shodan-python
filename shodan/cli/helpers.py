@@ -27,7 +27,8 @@ def get_api_key():
         raise click.ClickException('Please run "shodan init <api key>" before using this command')
 
     # Make sure it is a read-only file
-    os.chmod(keyfile, 0o600)
+    if not oct(os.stat(keyfile).st_mode).endswith("600"):
+        os.chmod(keyfile, 0o600)
 
     with open(keyfile, 'r') as fin:
         return fin.read().strip()

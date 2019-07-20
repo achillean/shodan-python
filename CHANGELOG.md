@@ -1,9 +1,10 @@
 CHANGELOG
 =========
 
-unreleased
+1.14.0
 ----------
 * New command **shodan version** (#104).
+* Only change api_key file permissions if needed (#103)
 
 1.13.0
 ------

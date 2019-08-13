@@ -1,8 +1,12 @@
 CHANGELOG
 =========
 
+1.15.0
+------
+* New option "--skip" for download command to help users resume a download
+
 1.14.0
-----------
+------
 * New command **shodan version** (#104).
 * Only change api_key file permissions if needed (#103)
 

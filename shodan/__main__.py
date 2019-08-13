@@ -205,9 +205,10 @@ def count(query):
 
 @main.command()
 @click.option('--limit', help='The number of results you want to download. -1 to download all the data possible.', default=1000, type=int)
+@click.option('--skip', help='The number of results to skip when starting the download.', default=0, type=int)
 @click.argument('filename', metavar='<filename>')
 @click.argument('query', metavar='<search query>', nargs=-1)
-def download(limit, filename, query):
+def download(limit, skip, filename, query):
     """Download search results and save them in a compressed JSON file."""
     key = get_api_key()
 
@@ -247,11 +248,15 @@ def download(limit, filename, query):
     # A limit of -1 means that we should download all the data
     if limit <= 0:
         limit = total
+    
+        # Adjust the total number of results we should expect to download if the user is skipping results
+        if skip > 0:
+            limit -= skip
 
     with helpers.open_file(filename, 'w') as fout:
         count = 0
         try:
-            cursor = api.search_cursor(query, minify=False)
+            cursor = api.search_cursor(query, minify=False, skip=skip)
             with click.progressbar(cursor, length=limit) as bar:
                 for banner in bar:
                     helpers.write_banner(fout, banner)

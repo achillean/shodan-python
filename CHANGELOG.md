@@ -1,9 +1,10 @@
 CHANGELOG
 =========
 
-unreleased
+1.17.0
 ----------
-* Fix bug that caused unicode error when printing domain information 
+* Fix bug that caused unicode error when printing domain information (#106)
+* Add flag to let users get their IPv6 address **shodan myip -6**(#35)
 
 1.16.0
 ------

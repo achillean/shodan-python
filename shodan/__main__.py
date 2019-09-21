@@ -400,11 +400,17 @@ def parse(color, fields, filters, filename, separator, filenames):
 
 
 @main.command()
-def myip():
+@click.option('--ipv6', '-6', is_flag=True, default=False, help='Try to use IPv6 instead of IPv4')
+def myip(ipv6):
     """Print your external IP address"""
     key = get_api_key()
 
     api = shodan.Shodan(key)
+
+    # Use the IPv6-enabled domain if requested
+    if ipv6:
+        api.base_url = 'https://apiv6.shodan.io'
+    
     try:
         click.echo(api.tools.myip())
     except shodan.APIError as e:

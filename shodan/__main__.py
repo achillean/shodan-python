@@ -585,8 +585,9 @@ def stats(limit, facets, filename, query):
 @click.option('--countries', help='A comma-separated list of countries to grab data on.', default=None, type=str)
 @click.option('--asn', help='A comma-separated list of ASNs to grab data on.', default=None, type=str)
 @click.option('--alert', help='The network alert ID or "all" to subscribe to all network alerts on your account.', default=None, type=str)
+@click.option('--tags', help='A comma-separated list of tags to grab data on.', default=None, type=str)
 @click.option('--compresslevel', help='The gzip compression level (0-9; 0 = no compression, 9 = most compression', default=9, type=int)
-def stream(color, fields, separator, limit, datadir, ports, quiet, timeout, streamer, countries, asn, alert, compresslevel):
+def stream(color, fields, separator, limit, datadir, ports, quiet, timeout, streamer, countries, asn, alert, tags, compresslevel):
     """Stream data in real-time."""
     # Setup the Shodan API
     key = get_api_key()
@@ -612,9 +613,11 @@ def stream(color, fields, separator, limit, datadir, ports, quiet, timeout, stre
         stream_type.append('asn')
     if alert:
         stream_type.append('alert')
+    if tags:
+        stream_type.append('tags')
 
     if len(stream_type) > 1:
-        raise click.ClickException('Please use --ports, --countries OR --asn. You cant subscribe to multiple filtered streams at once.')
+        raise click.ClickException('Please use --ports, --countries, --tags OR --asn. You cant subscribe to multiple filtered streams at once.')
 
     stream_args = None
 
@@ -635,6 +638,9 @@ def stream(color, fields, separator, limit, datadir, ports, quiet, timeout, stre
 
     if countries:
         stream_args = countries.split(',')
+    
+    if tags:
+        stream_args = tags.split(',')
 
     # Flatten the list of stream types
     # Possible values are:
@@ -655,6 +661,7 @@ def stream(color, fields, separator, limit, datadir, ports, quiet, timeout, stre
             'asn': api.stream.asn(args, timeout=timeout),
             'countries': api.stream.countries(args, timeout=timeout),
             'ports': api.stream.ports(args, timeout=timeout),
+            'tags': api.stream.tags(args, timeout=timeout),
         }.get(name, 'all')
 
     stream = _create_stream(stream_type, stream_args, timeout=timeout)

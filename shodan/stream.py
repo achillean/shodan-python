@@ -123,3 +123,14 @@ class Stream:
         stream = self._create_stream('/shodan/ports/%s' % ','.join([str(port) for port in ports]), timeout=timeout)
         for line in self._iter_stream(stream, raw):
             yield line
+
+    def tags(self, tags, raw=False, timeout=None):
+        """
+        A filtered version of the "banners" stream to only return banners that match the tags of interest.
+
+        :param tags: A list of tags to return banner data on.
+        :type tags: string[]
+        """
+        stream = self._create_stream('/shodan/tags/%s' % ','.join(tags), timeout=timeout)
+        for line in self._iter_stream(stream, raw):
+            yield line

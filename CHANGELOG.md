@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+1.16.0
+------
+* Ability to specify list of fields to include when converting to CSV/ Excel (#107)
+* Filter the Shodan Firehose based on tags in the banner
+
 1.15.0
 ------
 * New option "--skip" for download command to help users resume a download

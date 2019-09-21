@@ -89,15 +89,23 @@ CONVERTERS = {
     'xlsx': ExcelConverter,
 }
 @main.command()
+@click.option('--fields', help='List of properties to output.', default=None)
 @click.argument('input', metavar='<input file>')
 @click.argument('format', metavar='<output format>', type=click.Choice(CONVERTERS.keys()))
-def convert(input, format):
+def convert(fields, input, format):
     """Convert the given input data file into a different format. The following file formats are supported:
 
     kml, csv, geo.json, images, xlsx
 
     Example: shodan convert data.json.gz kml
     """
+    # Check that the converter allows a custom list of fields
+    converter_class = CONVERTERS.get(format)
+    if fields:
+        if not hasattr(converter_class, 'fields'):
+            raise click.ClickException('File format doesnt support custom list of fields')
+        converter_class.fields = [item.strip() for item in fields.split(',')]  # Use the custom fields the user specified
+    
     # Get the basename for the input file
     basename = input.replace('.json.gz', '').replace('.json', '')
 
@@ -113,7 +121,7 @@ def convert(input, format):
     progress_bar_thread.start()
 
     # Initialize the file converter
-    converter = CONVERTERS.get(format)(fout)
+    converter = converter_class(fout)
 
     converter.process([input])
 

@@ -151,7 +151,7 @@ def domain_info(domain):
     click.echo('')
     for record in info['data']:
         click.echo(
-            '{:32}  {:14}  {}'.format(
+            u'{:32}  {:14}  {}'.format(
                 click.style(record['subdomain'], fg='cyan'),
                 click.style(record['type'], fg='yellow'),
                 record['value']

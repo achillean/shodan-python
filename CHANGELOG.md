@@ -1,6 +1,10 @@
 CHANGELOG
 =========
 
+unreleased
+----------
+* Fix bug that caused unicode error when printing domain information 
+
 1.16.0
 ------
 * Ability to specify list of fields to include when converting to CSV/ Excel (#107)

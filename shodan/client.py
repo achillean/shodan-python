@@ -74,6 +74,72 @@ class Shodan:
             """
             return self.parent._request('/dns/domain/{}'.format(domain), {})
 
+    class Notifier:
+
+        def __init__(self, parent):
+            self.parent = parent
+        
+        def create(self, provider, args, description=None):
+            """Get the settings for the specified notifier that a user has configured.
+
+            :param provider: Provider name
+            :type provider: str
+            :param args: Provider arguments
+            :type args: dict
+            :param description: Human-friendly description of the notifier
+            :type description: str
+            :returns: dict -- fields are 'success' and 'id' of the notifier
+            """
+            args['provider'] = provider
+
+            if description:
+                args['description'] = description
+            
+            return self.parent._request('/notifier', args, method='post')
+        
+        def edit(self, nid, args):
+            """Get the settings for the specified notifier that a user has configured.
+
+            :param nid: Notifier ID
+            :type nid: str
+            :param args: Provider arguments
+            :type args: dict
+            :returns: dict -- fields are 'success' and 'id' of the notifier
+            """
+            return self.parent._request('/notifier/{}'.format(nid), args, method='put')
+        
+        def get(self, nid):
+            """Get the settings for the specified notifier that a user has configured.
+
+            :param nid: Notifier ID
+            :type nid: str
+            :returns: dict -- object describing the notifier settings
+            """
+            return self.parent._request('/notifier/{}'.format(nid), {})
+
+        def list_notifiers(self):
+            """Returns a list of notifiers that the user has added.
+
+            :returns: A list of notifierse that are available on the account
+            """
+            return self.parent._request('/notifier', {})
+
+        def list_providers(self):
+            """Returns a list of supported notification providers.
+
+            :returns: A list of providers where each object describes a provider
+            """
+            return self.parent._request('/notifier/provider', {})
+        
+        def remove(self, nid):
+            """Delete the provided notifier.
+
+            :param nid: Notifier ID
+            :type nid: str
+            :returns: dict -- 'success' set to True if action succeeded
+            """
+            return self.parent._request('/notifier/{}'.format(nid), {}, method='delete')
+
     class Tools:
 
         def __init__(self, parent):
@@ -195,6 +261,7 @@ class Shodan:
         self.dns = self.Dns(self)
         self.exploits = self.Exploits(self)
         self.labs = self.Labs(self)
+        self.notifier = self.Notifier(self)
         self.org = self.Organization(self)
         self.tools = self.Tools(self)
         self.stream = Stream(key, proxies=proxies)

@@ -1,9 +1,12 @@
 CHANGELOG
 =========
 
+1.19.0
+------
+* New method to edit the list of IPs for an existing network alert
+
 1.18.0
 ------
-
 * Add library methods for the new Notifications API
 
 1.17.0

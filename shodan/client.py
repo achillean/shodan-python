@@ -640,6 +640,27 @@ class Shodan:
 
         return response
 
+    def edit_alert(self, aid, ip):
+        """Edit the IPs that should be monitored by the alert.
+
+        :param aid: Alert ID
+        :type name: str
+        :param ip: Network range(s) to monitor
+        :type ip: str OR list of str
+
+        :returns: A dict describing the alert
+        """
+        data = {
+            'filters': {
+                'ip': ip,
+            },
+        }
+
+        response = api_request(self.api_key, '/shodan/alert/{}'.format(aid), data=data, params={}, method='post',
+                               proxies=self._session.proxies)
+
+        return response
+
     def alerts(self, aid=None, include_expired=True):
         """List all of the active alerts that the user created."""
         if aid:
@@ -684,3 +705,11 @@ class Shodan:
     def unignore_alert_trigger_notification(self, aid, trigger, ip, port):
         """Re-enable trigger notifications for the provided IP and port"""
         return self._request('/shodan/alert/{}/trigger/{}/ignore/{}:{}'.format(aid, trigger, ip, port), {}, method='delete')
+    
+    def add_alert_notifier(self, aid, nid):
+        """Enable the given notifier for an alert that has triggers enabled."""
+        return self._request('/shodan/alert/{}/notifier/{}'.format(aid, nid), {}, method='put')
+    
+    def remove_alert_notifier(self, aid, nid):
+        """Remove the given notifier for an alert that has triggers enabled."""
+        return self._request('/shodan/alert/{}/notifier/{}'.format(aid, nid), {}, method='delete')

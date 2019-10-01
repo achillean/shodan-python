@@ -7,6 +7,7 @@ import gzip
 import itertools
 import os
 import sys
+from ipaddress import ip_network, ip_address
 
 from .settings import SHODAN_CONFIG_DIR
 
@@ -69,7 +70,6 @@ def filter_with_netmask(banner, netmask):
     # a mere check for a specific field and thus needs its own mechanism
     # this will enable users to use the net:10.0.0.0/8 syntax they are used to
     # to find specific networks from a big shodan download.
-    from ipaddress import ip_network, ip_address
     network = ip_network(netmask)
     ip_field = get_banner_field(banner, 'ip')
     if not ip_field:

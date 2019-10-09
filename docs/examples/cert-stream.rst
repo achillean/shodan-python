@@ -24,7 +24,6 @@ information.
 	# information.
 	#
 	# Author: achillean
-
 	import shodan
 	import sys
 
@@ -35,7 +34,7 @@ information.
 	    # Setup the api
 	    api = shodan.Shodan(API_KEY)
 
-	    print 'Listening for certs...'
+	    print('Listening for certs...')
 	    for banner in api.stream.ports([443, 8443]):
 			if 'ssl' in banner:
 				# Print out all the SSL information that Shodan has collected

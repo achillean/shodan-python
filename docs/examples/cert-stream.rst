@@ -24,7 +24,6 @@ information.
 	# information.
 	#
 	# Author: achillean
-	from __future__ import print_function
 	import shodan
 	import sys
 

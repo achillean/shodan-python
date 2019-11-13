@@ -27,6 +27,11 @@ def data_list(dataset):
         for file in files:
             click.echo(click.style(u'{:20s}'.format(file['name']), fg='cyan'), nl=False)
             click.echo(click.style('{:10s}'.format(helpers.humanize_bytes(file['size'])), fg='yellow'), nl=False)
+
+            # Show the SHA1 checksum if available
+            if file.get('sha1'):
+                click.echo(click.style('{:42s}'.format(file['sha1']), fg='green'), nl=False)
+            
             click.echo('{}'.format(file['url']))
     else:
         # If no dataset was provided then show a list of all datasets

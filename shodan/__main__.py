@@ -136,7 +136,9 @@ def convert(fields, input, format):
 
 @main.command(name='domain')
 @click.argument('domain', metavar='<domain>')
-def domain_info(domain):
+@click.option('--details', '-D', help='Lookup host information for any IPs in the domain results', default=False, is_flag=True)
+@click.option('--save', '-S', help='Save the information in the a file named after the domain (append if file exists).', default=False, is_flag=True)
+def domain_info(domain, details, save):
     """View all available information for a domain"""
     key = get_api_key()
     api = shodan.Shodan(key)
@@ -145,6 +147,37 @@ def domain_info(domain):
         info = api.dns.domain_info(domain)
     except shodan.APIError as e:
         raise click.ClickException(e.value)
+
+    # Grab the host information for any IP records that were returned
+    hosts = {}
+    if details:
+        ips = [record['value'] for record in info['data'] if record['type'] in ['A', 'AAAA']]
+        ips = set(ips)
+
+        fout = None
+        if save:
+            filename = u'{}-hosts.json.gz'.format(domain)
+            fout = helpers.open_file(filename)
+
+        for ip in ips:
+            try:
+                hosts[ip] = api.host(ip)
+
+                # Store the banners if requested
+                if fout:
+                    for banner in hosts[ip]['data']:
+                        if 'placeholder' not in banner:
+                            helpers.write_banner(fout, banner)
+            except shodan.APIError:
+                pass  # Ignore any API lookup errors as this isn't critical information
+    
+    # Save the DNS data
+    if save:
+        filename = u'{}.json.gz'.format(domain)
+        fout = helpers.open_file(filename)
+
+        for record in info['data']:
+            helpers.write_banner(fout, record)
 
     click.secho(info['domain'].upper(), fg='green')
 
@@ -155,8 +188,15 @@ def domain_info(domain):
                 click.style(record['subdomain'], fg='cyan'),
                 click.style(record['type'], fg='yellow'),
                 record['value']
-            )
+            ),
+            nl=False,
         )
+
+        if record['value'] in hosts:
+            host = hosts[record['value']]
+            click.secho(u' Ports: {}'.format(', '.join([str(port) for port in sorted(host['ports'])])), fg='blue', nl=False)
+        
+        click.echo('')
 
 
 @main.command()

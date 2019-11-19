@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+1.20.0
+------
+* New option "-S" for **shodan domain** to save results from the lookup
+* New option "-D" for **shodan domain** to lookup open ports for IPs in the results
+
 1.19.0
 ------
 * New method to edit the list of IPs for an existing network alert

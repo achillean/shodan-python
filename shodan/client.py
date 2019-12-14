@@ -549,6 +549,20 @@ class Shodan:
                 tries += 1
                 time.sleep(1.0)  # wait 1 second if the search errored out for some reason
 
+    def search_facets(self):
+        """Returns a list of search facets that can be used to get aggregate information about a search query.
+
+        :returns: A list of strings where each is a facet name
+        """
+        return self._request('/shodan/host/search/facets', {})
+
+    def search_filters(self):
+        """Returns a list of search filters that are available.
+
+        :returns: A list of strings where each is a filter name
+        """
+        return self._request('/shodan/host/search/filters', {})
+
     def search_tokens(self, query):
         """Returns information about the search query itself (filters used etc.)
 

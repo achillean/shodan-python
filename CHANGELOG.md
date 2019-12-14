@@ -1,6 +1,10 @@
 CHANGELOG
 =========
 
+1.21.0
+------
+* New API methods ``api.search_facets()`` and ``api.search_filters()`` to get a list of available facets and filters.
+
 1.20.0
 ------
 * New option "-S" for **shodan domain** to save results from the lookup

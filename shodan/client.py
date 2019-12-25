@@ -69,10 +69,15 @@ class Shodan:
         def __init__(self, parent):
             self.parent = parent
 
-        def domain_info(self, domain):
+        def domain_info(self, domain, history=False, type=None):
             """Grab the DNS information for a domain.
             """
-            return self.parent._request('/dns/domain/{}'.format(domain), {})
+            args = {}
+            if history:
+                args['history'] = history
+            if type:
+                args['type'] = type
+            return self.parent._request('/dns/domain/{}'.format(domain), args)
 
     class Notifier:
 

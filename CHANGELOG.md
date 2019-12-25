@@ -1,6 +1,10 @@
 CHANGELOG
 =========
 
+1.21.1
+------
+* Add ``history`` and ``type`` parameters to ``Shodan.dns.domain_info()`` method and CLI command
+
 1.21.0
 ------
 * New API methods ``api.search_facets()`` and ``api.search_filters()`` to get a list of available facets and filters.

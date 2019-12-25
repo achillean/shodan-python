@@ -138,13 +138,15 @@ def convert(fields, input, format):
 @click.argument('domain', metavar='<domain>')
 @click.option('--details', '-D', help='Lookup host information for any IPs in the domain results', default=False, is_flag=True)
 @click.option('--save', '-S', help='Save the information in the a file named after the domain (append if file exists).', default=False, is_flag=True)
-def domain_info(domain, details, save):
+@click.option('--history', '-H', help='Include historical DNS data in the results', default=False, is_flag=True)
+@click.option('--type', '-T', help='Only returns DNS records of the provided type', default=None)
+def domain_info(domain, details, save, history, type):
     """View all available information for a domain"""
     key = get_api_key()
     api = shodan.Shodan(key)
 
     try:
-        info = api.dns.domain_info(domain)
+        info = api.dns.domain_info(domain, history=history, type=type)
     except shodan.APIError as e:
         raise click.ClickException(e.value)
 

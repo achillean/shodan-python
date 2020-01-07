@@ -69,10 +69,12 @@ class Shodan:
         def __init__(self, parent):
             self.parent = parent
 
-        def domain_info(self, domain, history=False, type=None):
+        def domain_info(self, domain, history=False, type=None, page=1):
             """Grab the DNS information for a domain.
             """
-            args = {}
+            args = {
+                'page': page,
+            }
             if history:
                 args['history'] = history
             if type:

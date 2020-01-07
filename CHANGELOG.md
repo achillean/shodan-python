@@ -1,6 +1,10 @@
 CHANGELOG
 =========
 
+1.21.2
+------
+* Add support for paging through the domain information
+
 1.21.1
 ------
 * Add ``history`` and ``type`` parameters to ``Shodan.dns.domain_info()`` method and CLI command

@@ -1,6 +1,10 @@
 CHANGELOG
 =========
 
+1.21.3
+------
+* Fix geo.json file converter
+
 1.21.2
 ------
 * Add support for paging through the domain information

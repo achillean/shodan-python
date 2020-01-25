@@ -62,9 +62,9 @@ and country.
 	    # And it also runs faster than doing a search().
 	    result = api.count(query, facets=FACETS)
 	    
-	    print 'Shodan Summary Information'
-	    print 'Query: %s' % query
-	    print 'Total Results: %s\n' % result['total']
+	    print('Shodan Summary Information')
+	    print('Query: %s' % query)
+	    print('Total Results: %s\n' % result['total'])
 	    
 	    # Print the summary info from the facets
 	    for facet in result['facets']:

@@ -106,7 +106,7 @@ There are a few key Shodan methods/ parameters that make the script work:
 			os.system('rm -f /tmp/gif-image-*.jpg')
 	
 			# Show a progress indicator
-			print result['ip_str']
+			print(result['ip_str'])
 
 
 The full code is also available on GitHub: https://gist.github.com/achillean/963eea552233d9550101

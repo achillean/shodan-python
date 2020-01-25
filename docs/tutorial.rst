@@ -56,7 +56,7 @@ Now that we have our API object all good to go, we're ready to perform a search:
 			print('IP: {}'.format(result['ip_str']))
 			print(result['data'])
 			print('')
-	except shodan.APIError, e:
+	except shodan.APIError as e:
 		print('Error: {}'.format(e))
 
 Stepping through the code, we first call the :py:func:`Shodan.search` method on the `api` object which

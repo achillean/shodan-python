@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 '''
 F-Secure Virus World Map console edition
 

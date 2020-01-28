@@ -13,7 +13,7 @@ setup(
     long_description_content_type='text/x-rst',
     author='John Matherly',
     author_email='jmath@shodan.io',
-    url='http://github.com/achillean/shodan-python/tree/master',
+    url='https://github.com/achillean/shodan-python',
     packages=['shodan', 'shodan.cli', 'shodan.cli.converter'],
     entry_points={'console_scripts': ['shodan=shodan.__main__:main']},
     install_requires=DEPENDENCIES,

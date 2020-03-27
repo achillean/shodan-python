@@ -54,7 +54,7 @@ class CsvConverter(Converter):
             # The "vulns" property can't be nicely flattened as-is so we turn
             # it into a list before processing the banner.
             if 'vulns' in banner:
-                banner['vulns'] = banner['vulns'].keys()
+                banner['vulns'] = list(banner['vulns'].keys())  # Python3 returns dict_keys so we neeed to cover that to a list
 
             try:
                 row = []

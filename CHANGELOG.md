@@ -1,6 +1,14 @@
 CHANGELOG
 =========
 
+1.22.1
+------
+* Fix bug when converting data file to CSV using Python3
+
+1.22.0
+------
+* Add support for new vulnerability streaming endpoints
+
 1.21.3
 ------
 * Fix geo.json file converter

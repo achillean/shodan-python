@@ -48,5 +48,5 @@ class GeoJsonConverter(Converter):
                 },
             }
             self.fout.write(dumps(feature) + ',')
-        except Exception as e:
+        except Exception:
             pass

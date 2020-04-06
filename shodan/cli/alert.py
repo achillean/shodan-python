@@ -3,7 +3,6 @@ import shodan
 
 from operator import itemgetter
 from shodan.cli.helpers import get_api_key
-from time import sleep
 
 
 @click.group()

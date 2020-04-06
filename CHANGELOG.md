@@ -1,6 +1,10 @@
 CHANGELOG
 =========
 
+1.23.0
+------
+* Add new CLI command: shodan alert domain
+
 1.22.1
 ------
 * Fix bug when converting data file to CSV using Python3

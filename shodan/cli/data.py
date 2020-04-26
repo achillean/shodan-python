@@ -1,3 +1,4 @@
+import os
 import click
 import requests
 import shodan
@@ -45,9 +46,10 @@ def data_list(dataset):
 @data.command(name='download')
 @click.option('--chunksize', help='The size of the chunks that are downloaded into memory before writing them to disk.', default=1024, type=int)
 @click.option('--filename', '-O', help='Save the file as the provided filename instead of the default.')
+@click.option('--force', 'overwrite', help='Force overwrite of the output file.', is_flag=True)
 @click.argument('dataset', metavar='<dataset>')
 @click.argument('name', metavar='<file>')
-def data_download(chunksize, filename, dataset, name):
+def data_download(chunksize, filename, overwrite, dataset, name):
     # Setup the API connection
     key = get_api_key()
     api = shodan.Shodan(key)
@@ -85,11 +87,15 @@ def data_download(chunksize, filename, dataset, name):
     if not filename:
         filename = '{}-{}'.format(dataset, name)
 
+    # Check to make sure we're not clobbering anything
+    if os.path.exists(filename) and not overwrite:
+        raise click.ClickException("File exists: {}".format(filename))
     # Open the output file and start writing to it in chunks
-    with open(filename, 'wb') as fout:
-        with click.progressbar(response.iter_content(chunk_size=chunk_size), length=limit) as bar:
-            for chunk in bar:
-                if chunk:
-                    fout.write(chunk)
+    else:
+        with open(filename, 'wb') as fout:
+            with click.progressbar(response.iter_content(chunk_size=chunk_size), length=limit) as bar:
+                for chunk in bar:
+                    if chunk:
+                        fout.write(chunk)
 
-    click.echo(click.style('Download completed: {}'.format(filename), 'green'))
+        click.echo(click.style('Download completed: {}'.format(filename), 'green'))

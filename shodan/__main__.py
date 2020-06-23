@@ -59,12 +59,20 @@ from shodan.cli.scan import scan
 
 # Make "-h" work like "--help"
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
+CONVERTERS = {
+    'kml': KmlConverter,
+    'csv': CsvConverter,
+    'geo.json': GeoJsonConverter,
+    'images': ImagesConverter,
+    'xlsx': ExcelConverter,
+}
 
 # Define a basestring type if necessary for Python3 compatibility
 try:
     basestring
 except NameError:
     basestring = str
+
 
 # Define the main entry point for all of our commands
 # and expose a way for 3rd-party plugins to tie into the Shodan CLI.
@@ -81,13 +89,6 @@ main.add_command(org)
 main.add_command(scan)
 
 
-CONVERTERS = {
-    'kml': KmlConverter,
-    'csv': CsvConverter,
-    'geo.json': GeoJsonConverter,
-    'images': ImagesConverter,
-    'xlsx': ExcelConverter,
-}
 @main.command()
 @click.option('--fields', help='List of properties to output.', default=None)
 @click.argument('input', metavar='<input file>')

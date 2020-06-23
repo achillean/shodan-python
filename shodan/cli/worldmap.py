@@ -29,8 +29,7 @@ MAPS = {
         'coords': [90.0, -180.0, -90.0, 180.0],
 
         # PyLint freaks out about the world map backslashes so ignore those warnings
-        # pylint: disable=W1401
-        'data': '''
+        'data': r'''
                . _..::__:  ,-"-"._       |7       ,     _,.__             
        _.___ _ _<_>`!(._`.`-.    /        _._     `_ ,_/  '  '-._.---.-.__
      .{     " " `-==,',._\{  \  / {)     / _ ">_,-' `                mt-2_
@@ -159,7 +158,7 @@ class AsciiMap(object):
         for lat, lon, char, desc, attrs, color in self.data:
             # to make this work almost everywhere. see http://docs.python.org/2/library/curses.html
             if desc:
-                desc = desc.encode(self.encoding, 'ignore')
+                desc = desc.encode(self.encoding, 'ignore').decode()
             if items_to_show <= 0:
                 break
             char_x, char_y = self.latlon_to_coords(lat, lon)

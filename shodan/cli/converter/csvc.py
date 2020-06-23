@@ -2,7 +2,13 @@
 from .base import Converter
 from ...helpers import iterate_files
 
-from collections import MutableMapping
+try:
+    # python 3.x: Import ABC from collections.abc
+    from collections.abc import MutableMapping
+except ImportError:
+    # Python 2.x: Import ABC from collections
+    from collections import MutableMapping
+
 from csv import writer as csv_writer, excel
 
 

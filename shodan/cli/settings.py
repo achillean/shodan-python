@@ -1,5 +1,10 @@
+from os import path
 
-SHODAN_CONFIG_DIR = '~/.shodan/'
+if path.exists(path.expanduser("~/.config/shodan")):
+    SHODAN_CONFIG_DIR="~/.config/shodan/"
+else:
+    SHODAN_CONFIG_DIR = '~/.shodan/'
+
 COLORIZE_FIELDS = {
     'ip_str': 'green',
     'port': 'yellow',

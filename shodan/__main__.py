@@ -210,7 +210,7 @@ def init(key):
     shodan_dir = os.path.expanduser(SHODAN_CONFIG_DIR)
     if not os.path.isdir(shodan_dir):
         try:
-            os.mkdir(shodan_dir)
+            os.makedirs(shodan_dir)
         except OSError:
             raise click.ClickException('Unable to create directory to store the Shodan API key ({})'.format(shodan_dir))
 

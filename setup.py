@@ -9,7 +9,7 @@ README = open('README.rst', 'r').read()
 
 setup(
     name='shodan',
-    version='1.23.0',
+    version='1.23.1',
     description='Python library and command-line utility for Shodan (https://developer.shodan.io)',
     long_description=README,
     long_description_content_type='text/x-rst',

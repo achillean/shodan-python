@@ -51,7 +51,7 @@ class CsvConverter(Converter):
     ]
 
     def process(self, files):
-        writer = csv_writer(self.fout, dialect=excel)
+        writer = csv_writer(self.fout, dialect=excel, lineterminator='\n')
 
         # Write the header
         writer.writerow(self.fields)

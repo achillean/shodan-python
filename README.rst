@@ -21,6 +21,7 @@ Features
 - `Manage Email Notifications <https://asciinema.org/a/7WvyDtNxn0YeNU70ozsxvXDmL>`_
 - Exploit search API fully implemented
 - Bulk data downloads
+- Access the Shodan DNS DB to view domain information
 - `Command-line interface <https://cli.shodan.io>`_
 
 .. image:: https://cli.shodan.io/img/shodan-cli-preview.png

@@ -288,10 +288,10 @@ def download(limit, skip, filename, query):
         raise click.ClickException('The Shodan API is unresponsive at the moment, please try again later.')
 
     # Print some summary information about the download request
-    click.echo('Search query:\t\t\t%s' % query)
-    click.echo('Total number of results:\t%s' % total)
-    click.echo('Query credits left:\t\t%s' % info['unlocked_left'])
-    click.echo('Output file:\t\t\t%s' % filename)
+    click.echo('Search query:\t\t\t{}'.format(query))
+    click.echo('Total number of results:\t{}'.format(total))
+    click.echo('Query credits left:\t\t{}'.format(info['unlocked_left']))
+    click.echo('Output file:\t\t\t{}'.format(filename))
 
     if limit > total:
         limit = total

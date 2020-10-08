@@ -166,7 +166,7 @@ class AsciiMap(object):
                 attrs |= curses.color_pair(self.colors[color])
             self.window.addstr(char_y, char_x, char, attrs)
             if desc:
-                det_show = "%s %s" % (char, desc)
+                det_show = "{} {}".format(char, desc)
             else:
                 det_show = None
 
@@ -179,7 +179,7 @@ class AsciiMap(object):
                     # FIXME: check window size before addstr()
                     break
         self.window.overwrite(target)
-        self.window.leaveok(1)
+        self.window.leaveok(True)
 
 
 class MapApp(object):

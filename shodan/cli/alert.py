@@ -1,8 +1,71 @@
 import click
+import csv
 import shodan
 
+from collections import defaultdict
 from operator import itemgetter
 from shodan.cli.helpers import get_api_key
+
+
+MAX_QUERY_LENGTH = 1000
+
+
+def aggregate_facet(api, networks, facets):
+    """Merge the results from multiple facet API queries into a single result object.
+    This is necessary because a user might be monitoring a lot of IPs/ networks so it doesn't fit
+    into a single API call.
+    """
+    def _merge_custom_facets(lfacets, results):
+        for key in results['facets']:
+            if key not in lfacets:
+                lfacets[key] = defaultdict(int)
+
+            for item in results['facets'][key]:
+                lfacets[key][item['value']] += item['count']
+
+    # We're going to create a custom facets dict where
+    # the key is the value of a facet. Normally the facets
+    # object is a list where each item has a "value" and "count" property.
+    tmp_facets = {}
+    count = 0
+
+    query = 'net:'
+
+    for net in networks:
+        query += '{},'.format(net)
+
+        # Start running API queries if the query length is getting long
+        if len(query) > MAX_QUERY_LENGTH:
+            results = api.count(query[:-1], facets=facets)
+
+            _merge_custom_facets(tmp_facets, results)
+            count += results['total']
+            query = 'net:'
+
+    # Run any remaining search query
+    if query[-1] != ':':
+        results = api.count(query[:-1], facets=facets)
+
+        _merge_custom_facets(tmp_facets, results)
+        count += results['total']
+
+    # Convert the internal facets structure back to the one that
+    # the API returns.
+    new_facets = {}
+    for facet in tmp_facets:
+        sorted_items = sorted(tmp_facets[facet].items(), key=itemgetter(1), reverse=True)
+        new_facets[facet] = [{'value': key, 'count': value} for key, value in sorted_items]
+
+    # Make sure the facet keys exist even if there weren't any results
+    for facet, _ in facets:
+        if facet not in new_facets:
+            new_facets[facet] = []
+
+    return {
+        'matches': [],
+        'facets': new_facets,
+        'total': count,
+    }
 
 
 @click.group()
@@ -147,6 +210,95 @@ def alert_list(expired):
                 click.echo('')
     else:
         click.echo("You haven't created any alerts yet.")
+
+
+@alert.command(name='stats')
+@click.option('--limit', help='The number of results to return.', default=10, type=int)
+@click.option('--filename', '-O', help='Save the results in a CSV file of the provided name.', default=None)
+@click.argument('facets', metavar='<facets ...>', nargs=-1)
+def alert_stats(limit, filename, facets):
+    """Show summary information about your monitored networks"""
+    # Setup Shodan
+    key = get_api_key()
+    api = shodan.Shodan(key)
+
+    # Make sure the user didn't supply an empty string
+    if not facets:
+        raise click.ClickException('No facets provided')
+
+    facets = [(facet, limit) for facet in facets]
+
+    # Get the list of IPs/ networks that the user is monitoring
+    networks = set()
+    try:
+        alerts = api.alerts()
+        for alert in alerts:
+            for tmp in alert['filters']['ip']:
+                networks.add(tmp)
+    except shodan.APIError as e:
+        raise click.ClickException(e.value)
+
+    # Grab the facets the user requested
+    try:
+        results = aggregate_facet(api, networks, facets)
+    except shodan.APIError as e:
+        raise click.ClickException(e.value)
+
+    # TODO: The below code was taken from __main__.py:stats() - we should refactor it so the code can be shared
+    # Print the stats tables
+    for facet in results['facets']:
+        click.echo('Top {} Results for Facet: {}'.format(len(results['facets'][facet]), facet))
+
+        for item in results['facets'][facet]:
+            # Force the value to be a string - necessary because some facet values are numbers
+            value = u'{}'.format(item['value'])
+
+            click.echo(click.style(u'{:28s}'.format(value), fg='cyan'), nl=False)
+            click.echo(click.style(u'{:12,d}'.format(item['count']), fg='green'))
+
+        click.echo('')
+
+    # Create the output file if requested
+    fout = None
+    if filename:
+        if not filename.endswith('.csv'):
+            filename += '.csv'
+        fout = open(filename, 'w')
+        writer = csv.writer(fout, dialect=csv.excel)
+
+        # Write the header that contains the facets
+        row = []
+        for facet in results['facets']:
+            row.append(facet)
+            row.append('')
+        writer.writerow(row)
+
+        # Every facet has 2 columns (key, value)
+        counter = 0
+        has_items = True
+        while has_items:
+            # pylint: disable=W0612
+            row = ['' for i in range(len(results['facets']) * 2)]
+
+            pos = 0
+            has_items = False
+            for facet in results['facets']:
+                values = results['facets'][facet]
+
+                # Add the values for the facet into the current row
+                if len(values) > counter:
+                    has_items = True
+                    row[pos] = values[counter]['value']
+                    row[pos + 1] = values[counter]['count']
+
+                pos += 2
+
+            # Write out the row
+            if has_items:
+                writer.writerow(row)
+
+            # Move to the next row of values
+            counter += 1
 
 
 @alert.command(name='remove')

@@ -504,7 +504,7 @@ class Shodan:
 
         return self._request('/shodan/host/search', args)
 
-    def search_cursor(self, query, minify=True, retries=5, skip=0):
+    def search_cursor(self, query, minify=True, retries=5):
         """Search the SHODAN database.
 
         This method returns an iterator that can directly be in a loop. Use it when you want to loop over
@@ -518,8 +518,6 @@ class Shodan:
         :type minify: bool
         :param retries: (optional) How often to retry the search in case it times out
         :type retries: int
-        :param skip: (optional) Number of results to skip
-        :type skip: int
 
         :returns: A search cursor that can be used as an iterator/ generator.
         """
@@ -531,12 +529,6 @@ class Shodan:
             'matches': [True],
             'total': None,
         }
-
-        # Convert the number of skipped records into a page number
-        if skip > 0:
-            # Each page returns 100 results so find the nearest page that we want
-            # the cursor to skip to.
-            page += int(skip / 100)
 
         while results['matches']:
             try:

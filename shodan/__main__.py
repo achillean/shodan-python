@@ -298,15 +298,11 @@ def download(limit, filename, query):
     # A limit of -1 means that we should download all the data
     if limit <= 0:
         limit = total
-    
-        # Adjust the total number of results we should expect to download if the user is skipping results
-        if skip > 0:
-            limit -= skip
 
     with helpers.open_file(filename, 'w') as fout:
         count = 0
         try:
-            cursor = api.search_cursor(query, minify=False, skip=skip)
+            cursor = api.search_cursor(query, minify=False)
             with click.progressbar(cursor, length=limit) as bar:
                 for banner in bar:
                     helpers.write_banner(fout, banner)

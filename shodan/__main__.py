@@ -256,7 +256,6 @@ def count(query):
 
 @main.command()
 @click.option('--limit', help='The number of results you want to download. -1 to download all the data possible.', default=1000, type=int)
-@click.option('--skip', help='The number of results to skip when starting the download.', default=0, type=int)
 @click.argument('filename', metavar='<filename>')
 @click.argument('query', metavar='<search query>', nargs=-1)
 def download(limit, skip, filename, query):

@@ -1,6 +1,19 @@
 CHANGELOG
 =========
 
+1.24.0
+------
+* use default config dir `~/.config/shodan`, but support existing installations
+* Fix bug that caused extra newlines when converting `.json.gz` data file to CSV on Windows
+* Fix linting error
+
+1.23.1
+------
+* Fix linting errors
+* Import ABC from `collections.abc` for Python 3 compatibility
+* Fix invalid escape sequence error (#131)
+* Improve ``shodan radar`` output on Python 3
+
 1.23.0
 ------
 * Add new CLI command: shodan alert domain

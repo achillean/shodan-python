@@ -4,7 +4,10 @@ import shodan
 
 from collections import defaultdict
 from operator import itemgetter
+from shodan import APIError
 from shodan.cli.helpers import get_api_key
+from shodan.helpers import open_file, write_banner
+from time import sleep
 
 
 MAX_QUERY_LENGTH = 1000
@@ -136,6 +139,86 @@ def alert_domain(domain, triggers):
 
     click.secho('Successfully created domain alert!', fg='green')
     click.secho('Alert ID: {}'.format(alert['id']), fg='cyan')
+
+
+@alert.command(name='download')
+@click.argument('filename', metavar='<filename>', type=str)
+@click.option('--alert-id', help='Specific alert ID to download the data of', default=None)
+def alert_download(filename, alert_id):
+    """Download all information for monitored networks/ IPs."""
+    key = get_api_key()
+
+    api = shodan.Shodan(key)
+    ips = set()
+    networks = set()
+
+    # Helper method to process batches of IPs
+    def batch(iterable, size=1):
+        iter_length = len(iterable)
+        for ndx in range(0, iter_length, size):
+            yield iterable[ndx:min(ndx + size, iter_length)]
+
+    try:
+        # Get the list of alerts for the user
+        click.echo('Looking up alert information...')
+        if alert_id:
+            alerts = [api.alerts(aid=alert_id.strip())]
+        else:
+            alerts = api.alerts()
+        
+        click.echo('Compiling list of networks/ IPs to download...')
+        for alert in alerts:
+            for net in alert['filters']['ip']:
+                if '/' in net:
+                    networks.add(net)
+                else:
+                    ips.add(net)
+        
+        click.echo('Downloading...')
+        with open_file(filename) as fout:
+            # Check if the user is able to use batch IP lookups
+            batch_size = 1
+            if len(ips) > 0:
+                api_info = api.info()
+                if api_info['plan'] in ['corp', 'stream-100']:
+                    batch_size = 100
+            
+            # Convert it to a list so we can index into it
+            ips = list(ips)
+
+            # Grab all the IP information
+            for ip in batch(ips, size=batch_size):
+                try:
+                    click.echo(ip)
+                    results = api.host(ip)
+                    if not isinstance(results, list):
+                        results = [results]
+                    
+                    for host in results:
+                        for banner in host['data']:
+                            write_banner(fout, banner)
+                except APIError:
+                    pass
+                sleep(1)  # Slow down a bit to make sure we don't hit the rate limit
+            
+            # Grab all the network ranges
+            for net in networks:
+                try:
+                    counter = 0
+                    click.echo(net)
+                    for banner in api.search_cursor('net:{}'.format(net)):
+                        write_banner(fout, banner)
+                        
+                        # Slow down a bit to make sure we don't hit the rate limit
+                        if counter % 100 == 0:
+                            sleep(1)
+                        counter += 1
+                except APIError:
+                    pass
+    except shodan.APIError as e:
+        raise click.ClickException(e.value)
+    
+    click.secho('Successfully downloaded results into: {}'.format(filename), fg='green')
 
 
 @alert.command(name='info')

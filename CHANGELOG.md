@@ -1,6 +1,14 @@
 CHANGELOG
 =========
 
+1.25.0
+------
+* Add new CLI command: shodan alert download
+
+1.24.0
+------
+* Add new CLI command: shodan alert stats
+
 1.23.0
 ------
 * Add new CLI command: shodan alert domain

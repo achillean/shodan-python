@@ -470,7 +470,7 @@ class Shodan:
         """
         return self._request('/shodan/scan/%s' % scan_id, {})
 
-    def search(self, query, page=1, limit=None, offset=None, facets=None, minify=True, timeout=0):
+    def search(self, query, page=1, limit=None, offset=None, facets=None, minify=True, timeout=None):
         """Search the SHODAN database.
 
         :param query: Search query; identical syntax to the website

@@ -507,7 +507,7 @@ class Shodan:
 
         return self._request('/shodan/host/search', args)
 
-    def search_cursor(self, query, minify=True, retries=5, timeout=0):
+    def search_cursor(self, query, minify=True, retries=5, timeout=None):
         """Search the SHODAN database.
 
         This method returns an iterator that can directly be in a loop. Use it when you want to loop over
@@ -549,7 +549,7 @@ class Shodan:
                     raise APIError('Retry limit reached ({:d})'.format(retries))
 
                 tries += 1
-                time.sleep(1.0)  # wait 1 second if the search errored out for some reason
+                time.sleep(tries)  # wait (1 second * retry number) if the search errored out for some reason
 
     def search_facets(self):
         """Returns a list of search facets that can be used to get aggregate information about a search query.

@@ -470,7 +470,7 @@ class Shodan:
         """
         return self._request('/shodan/scan/%s' % scan_id, {})
 
-    def search(self, query, page=1, limit=None, offset=None, facets=None, minify=True, timeout=None):
+    def search(self, query, page=1, limit=None, offset=None, facets=None, minify=True):
         """Search the SHODAN database.
 
         :param query: Search query; identical syntax to the website
@@ -502,12 +502,9 @@ class Shodan:
         if facets:
             args['facets'] = create_facet_string(facets)
 
-        if timeout:
-            args['timeout'] = timeout
-
         return self._request('/shodan/host/search', args)
 
-    def search_cursor(self, query, minify=True, retries=5, timeout=None):
+    def search_cursor(self, query, minify=True, retries=5):
         """Search the SHODAN database.
 
         This method returns an iterator that can directly be in a loop. Use it when you want to loop over
@@ -535,7 +532,7 @@ class Shodan:
 
         while results['matches']:
             try:
-                results = self.search(query, minify=minify, page=page, timeout=timeout)
+                results = self.search(query, minify=minify, page=page)
                 for banner in results['matches']:
                     try:
                         yield banner

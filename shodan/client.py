@@ -546,7 +546,7 @@ class Shodan:
                     raise APIError('Retry limit reached ({:d})'.format(retries))
 
                 tries += 1
-                time.sleep(1.0)  # wait 1 second if the search errored out for some reason
+                time.sleep(tries)  # wait (1 second * retry number) if the search errored out for some reason
 
     def search_facets(self):
         """Returns a list of search facets that can be used to get aggregate information about a search query.

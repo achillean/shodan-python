@@ -13,7 +13,7 @@ class Stream:
         self.api_key = api_key
         self.proxies = proxies
 
-    def _create_stream(self, name, timeout=None):
+    def _create_stream(self, name, query=None, timeout=None):
         params = {
             'key': self.api_key,
         }
@@ -27,8 +27,11 @@ class Stream:
         # If the user requested a timeout then we need to disable heartbeat messages
         # which are intended to keep stream connections alive even if there isn't any data
         # flowing through.
-        if timeout:
+        if timeout is not None:
             params['heartbeat'] = False
+
+        if query is not None:
+            params['query'] = query
 
         try:
             while True:
@@ -110,6 +113,18 @@ class Stream:
         :type countries: string[]
         """
         stream = self._create_stream('/shodan/countries/%s' % ','.join(countries), timeout=timeout)
+        for line in self._iter_stream(stream, raw):
+            yield line
+
+    def custom(self, query, raw=False, timeout=None):
+        """
+        A filtered version of the "banners" stream to only return banners that match the query of interest. The query
+        can vary and mix-match with different arguments (ports, tags, vulns, etc).
+
+        :param query: A space-separated list of key:value filters query to return banner data on.
+        :type query: string
+        """
+        stream = self._create_stream('/shodan/custom', query=query, timeout=timeout)
         for line in self._iter_stream(stream, raw):
             yield line
 

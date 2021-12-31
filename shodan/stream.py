@@ -27,7 +27,7 @@ class Stream:
         # If the user requested a timeout then we need to disable heartbeat messages
         # which are intended to keep stream connections alive even if there isn't any data
         # flowing through.
-        if timeout is not None:
+        if timeout:
             params['heartbeat'] = False
 
         if query is not None:

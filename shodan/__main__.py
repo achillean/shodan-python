@@ -106,7 +106,7 @@ def convert(fields, input, format):
         if not hasattr(converter_class, 'fields'):
             raise click.ClickException('File format doesnt support custom list of fields')
         converter_class.fields = [item.strip() for item in fields.split(',')]  # Use the custom fields the user specified
-    
+
     # Get the basename for the input file
     basename = input.replace('.json.gz', '').replace('.json', '')
 
@@ -173,7 +173,7 @@ def domain_info(domain, details, save, history, type):
                             helpers.write_banner(fout, banner)
             except shodan.APIError:
                 pass  # Ignore any API lookup errors as this isn't critical information
-    
+
     # Save the DNS data
     if save:
         filename = u'{}.json.gz'.format(domain)
@@ -198,7 +198,7 @@ def domain_info(domain, details, save, history, type):
         if record['value'] in hosts:
             host = hosts[record['value']]
             click.secho(u' Ports: {}'.format(', '.join([str(port) for port in sorted(host['ports'])])), fg='blue', nl=False)
-        
+
         click.echo('')
 
 
@@ -448,7 +448,7 @@ def myip(ipv6):
     # Use the IPv6-enabled domain if requested
     if ipv6:
         api.base_url = 'https://apiv6.shodan.io'
-    
+
     try:
         click.echo(api.tools.myip())
     except shodan.APIError as e:
@@ -617,22 +617,23 @@ def stats(limit, facets, filename, query):
 
 
 @main.command()
-@click.option('--color/--no-color', default=True)
+@click.option('--streamer', help='Specify a custom Shodan stream server to use for grabbing data.', default='https://stream.shodan.io', type=str)
 @click.option('--fields', help='List of properties to output.', default='ip_str,port,hostnames,data')
 @click.option('--separator', help='The separator between the properties of the search results.', default='\t')
-@click.option('--limit', help='The number of results you want to download. -1 to download all the data possible.', default=-1, type=int)
 @click.option('--datadir', help='Save the stream data into the specified directory as .json.gz files.', default=None, type=str)
-@click.option('--ports', help='A comma-separated list of ports to grab data on.', default=None, type=str)
-@click.option('--quiet', help='Disable the printing of information to the screen.', is_flag=True)
-@click.option('--timeout', help='Timeout. Should the shodan stream cease to send data, then timeout after <timeout> seconds.', default=0, type=int)
-@click.option('--streamer', help='Specify a custom Shodan stream server to use for grabbing data.', default='https://stream.shodan.io', type=str)
-@click.option('--countries', help='A comma-separated list of countries to grab data on.', default=None, type=str)
 @click.option('--asn', help='A comma-separated list of ASNs to grab data on.', default=None, type=str)
 @click.option('--alert', help='The network alert ID or "all" to subscribe to all network alerts on your account.', default=None, type=str)
+@click.option('--countries', help='A comma-separated list of countries to grab data on.', default=None, type=str)
+@click.option('--custom-filters', help='A space-separated list of filters query to grab data on.', default=None, type=str)
+@click.option('--ports', help='A comma-separated list of ports to grab data on.', default=None, type=str)
 @click.option('--tags', help='A comma-separated list of tags to grab data on.', default=None, type=str)
-@click.option('--compresslevel', help='The gzip compression level (0-9; 0 = no compression, 9 = most compression', default=9, type=int)
 @click.option('--vulns', help='A comma-separated list of vulnerabilities to grab data on.', default=None, type=str)
-def stream(color, fields, separator, limit, datadir, ports, quiet, timeout, streamer, countries, asn, alert, tags, compresslevel, vulns):
+@click.option('--limit', help='The number of results you want to download. -1 to download all the data possible.', default=-1, type=int)
+@click.option('--compresslevel', help='The gzip compression level (0-9; 0 = no compression, 9 = most compression', default=9, type=int)
+@click.option('--timeout', help='Timeout. Should the shodan stream cease to send data, then timeout after <timeout> seconds.', default=0, type=int)
+@click.option('--color/--no-color', default=True)
+@click.option('--quiet', help='Disable the printing of information to the screen.', is_flag=True)
+def stream(streamer, fields, separator, datadir, asn, alert, countries, custom_filters, ports, tags, vulns, limit, compresslevel, timeout, color, quiet):
     """Stream data in real-time."""
     # Setup the Shodan API
     key = get_api_key()
@@ -662,9 +663,11 @@ def stream(color, fields, separator, limit, datadir, ports, quiet, timeout, stre
         stream_type.append('tags')
     if vulns:
         stream_type.append('vulns')
+    if custom_filters:
+        stream_type.append('custom_filters')
 
     if len(stream_type) > 1:
-        raise click.ClickException('Please use --ports, --countries, --tags, --vulns OR --asn. You cant subscribe to multiple filtered streams at once.')
+        raise click.ClickException('Please use --ports, --countries, --custom, --tags, --vulns OR --asn. You cant subscribe to multiple filtered streams at once.')
 
     stream_args = None
 
@@ -685,12 +688,15 @@ def stream(color, fields, separator, limit, datadir, ports, quiet, timeout, stre
 
     if countries:
         stream_args = countries.split(',')
-    
+
     if tags:
         stream_args = tags.split(',')
-    
+
     if vulns:
         stream_args = vulns.split(',')
+
+    if custom_filters:
+        stream_args = custom_filters
 
     # Flatten the list of stream types
     # Possible values are:
@@ -710,6 +716,7 @@ def stream(color, fields, separator, limit, datadir, ports, quiet, timeout, stre
             'alert': api.stream.alert(args, timeout=timeout),
             'asn': api.stream.asn(args, timeout=timeout),
             'countries': api.stream.countries(args, timeout=timeout),
+            'custom_filters': api.stream.custom(args, timeout=timeout),
             'ports': api.stream.ports(args, timeout=timeout),
             'tags': api.stream.tags(args, timeout=timeout),
             'vulns': api.stream.vulns(args, timeout=timeout),

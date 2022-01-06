@@ -63,7 +63,7 @@ class Stream:
         return req
 
     def _iter_stream(self, stream, raw):
-        for line in stream.iter_lines(decode_unicode=True):
+        for line in stream.iter_lines():
             # The Streaming API sends out heartbeat messages that are newlines
             # We want to ignore those messages since they don't contain any data
             if line:

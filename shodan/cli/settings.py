@@ -14,3 +14,4 @@ COLORIZE_FIELDS = {
     'org': 'cyan',
     'vulns': 'red',
 }
+REQUESTS_TIMEOUT = (30, 30)  # (connect, read)

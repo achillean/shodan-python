@@ -15,6 +15,7 @@ import json
 from .exception import APIError
 from .helpers import api_request, create_facet_string
 from .stream import Stream
+from .cli.settings import REQUESTS_TIMEOUT
 
 
 # Try to disable the SSL warnings in urllib3 since not everybody can install
@@ -301,13 +302,13 @@ class Shodan:
         try:
             method = method.lower()
             if method == 'post':
-                data = self._session.post(base_url + function, params)
+                data = self._session.post(base_url + function, params, timeout=REQUESTS_TIMEOUT)
             elif method == 'put':
-                data = self._session.put(base_url + function, params=params)
+                data = self._session.put(base_url + function, params=params, timeout=REQUESTS_TIMEOUT)
             elif method == 'delete':
-                data = self._session.delete(base_url + function, params=params)
+                data = self._session.delete(base_url + function, params=params, timeout=REQUESTS_TIMEOUT)
             else:
-                data = self._session.get(base_url + function, params=params)
+                data = self._session.get(base_url + function, params=params, timeout=REQUESTS_TIMEOUT)
         except Exception:
             raise APIError('Unable to connect to Shodan')
 

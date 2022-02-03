@@ -74,7 +74,7 @@ class Stream:
 
     def alert(self, aid=None, timeout=None, raw=False):
         if aid:
-            stream = self._create_stream('/shodan/alert/%s' % aid, timeout=timeout)
+            stream = self._create_stream('/shodan/alert/{}'.format(aid), timeout=timeout)
         else:
             stream = self._create_stream('/shodan/alert', timeout=timeout)
 
@@ -93,7 +93,7 @@ class Stream:
         :param asn: A list of ASN to return banner data on.
         :type asn: string[]
         """
-        stream = self._create_stream('/shodan/asn/%s' % ','.join(asn), timeout=timeout)
+        stream = self._create_stream('/shodan/asn/{}'.format(','.join(asn)), timeout=timeout)
         for line in self._iter_stream(stream, raw):
             yield line
 
@@ -112,7 +112,7 @@ class Stream:
         :param countries: A list of countries to return banner data on.
         :type countries: string[]
         """
-        stream = self._create_stream('/shodan/countries/%s' % ','.join(countries), timeout=timeout)
+        stream = self._create_stream('/shodan/countries/{}'.format(','.join(countries)), timeout=timeout)
         for line in self._iter_stream(stream, raw):
             yield line
 
@@ -135,7 +135,7 @@ class Stream:
         :param ports: A list of ports to return banner data on.
         :type ports: int[]
         """
-        stream = self._create_stream('/shodan/ports/%s' % ','.join([str(port) for port in ports]), timeout=timeout)
+        stream = self._create_stream('/shodan/ports/{}'.format(','.join([str(port) for port in ports])), timeout=timeout)
         for line in self._iter_stream(stream, raw):
             yield line
 
@@ -146,7 +146,7 @@ class Stream:
         :param tags: A list of tags to return banner data on.
         :type tags: string[]
         """
-        stream = self._create_stream('/shodan/tags/%s' % ','.join(tags), timeout=timeout)
+        stream = self._create_stream('/shodan/tags/{}'.format(','.join(tags)), timeout=timeout)
         for line in self._iter_stream(stream, raw):
             yield line
 
@@ -157,6 +157,6 @@ class Stream:
         :param vulns: A list of vulns to return banner data on.
         :type vulns: string[]
         """
-        stream = self._create_stream('/shodan/vulns/%s' % ','.join(vulns), timeout=timeout)
+        stream = self._create_stream('/shodan/vulns/{}'.format(','.join(vulns)), timeout=timeout)
         for line in self._iter_stream(stream, raw):
             yield line

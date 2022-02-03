@@ -273,6 +273,8 @@ class Shodan:
         self.tools = self.Tools(self)
         self.stream = Stream(key, proxies=proxies)
         self._session = requests.Session()
+        self.api_rate_limit = 1  # Requests per second
+        self._api_query_time = None
         if proxies:
             self._session.proxies.update(proxies)
             self._session.trust_env = False
@@ -297,6 +299,11 @@ class Shodan:
             'exploits': self.base_exploits_url,
         }.get(service, 'shodan')
 
+        # Wait for API rate limit
+        if self._api_query_time is not None and self.api_rate_limit > 0:
+            while (1.0 / self.api_rate_limit) + self._api_query_time >= time.time():
+                time.sleep(0.1 / self.api_rate_limit)
+
         # Send the request
         try:
             method = method.lower()
@@ -308,6 +315,7 @@ class Shodan:
                 data = self._session.delete(base_url + function, params=params)
             else:
                 data = self._session.get(base_url + function, params=params)
+            self._api_query_time = time.time()
         except Exception:
             raise APIError('Unable to connect to Shodan')
 
@@ -377,7 +385,7 @@ class Shodan:
             params['history'] = history
         if minify:
             params['minify'] = minify
-        return self._request('/shodan/host/%s' % ','.join(ips), params)
+        return self._request('/shodan/host/{}'.format(','.join(ips)), params)
 
     def info(self):
         """Returns information about the current API key, such as a list of add-ons
@@ -468,7 +476,7 @@ class Shodan:
 
         :returns: A dictionary with general information about the scan, including its status in getting processed.
         """
-        return self._request('/shodan/scan/%s' % scan_id, {})
+        return self._request('/shodan/scan/{}'.format(scan_id), {})
 
     def search(self, query, page=1, limit=None, offset=None, facets=None, minify=True):
         """Search the SHODAN database.
@@ -677,7 +685,7 @@ class Shodan:
     def alerts(self, aid=None, include_expired=True):
         """List all of the active alerts that the user created."""
         if aid:
-            func = '/shodan/alert/%s/info' % aid
+            func = '/shodan/alert/{}/info'.format(aid)
         else:
             func = '/shodan/alert/info'
 
@@ -689,7 +697,7 @@ class Shodan:
 
     def delete_alert(self, aid):
         """Delete the alert with the given ID."""
-        func = '/shodan/alert/%s' % aid
+        func = '/shodan/alert/{}'.format(aid)
 
         response = api_request(self.api_key, func, params={}, method='delete',
                                proxies=self._session.proxies)

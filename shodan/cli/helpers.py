@@ -47,7 +47,7 @@ def timestr():
 
 
 def open_streaming_file(directory, timestr, compresslevel=9):
-    return gzip.open('%s/%s.json.gz' % (directory, timestr), 'a', compresslevel)
+    return gzip.open('{}/{}.json.gz'.format(directory, timestr), 'a', compresslevel)
 
 
 def get_banner_field(banner, flat_field):

@@ -1,6 +1,20 @@
 CHANGELOG
 =========
 
+1.27.0
+------
+* New command: ``shodan alert export`` to save the current network monitoring configuration
+* New command: ``shodan alert import`` to restore a previous network monitoring configuration
+* Automatically rate limit API requests to 1 request per second (credit to @malvidin)
+
+1.26.1
+------
+* Fix a unicode issue that caused the streams to get truncated and error out due to invalid JSON
+
+1.26.0
+------
+* Add the ability to create custom data streams in the Shodan() class as well as the CLI (``shodan stream --custom-filters <query>``)
+
 1.25.0
 ------
 * Add new CLI command: shodan alert download

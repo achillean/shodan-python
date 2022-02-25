@@ -304,20 +304,30 @@ class Shodan:
             while (1.0 / self.api_rate_limit) + self._api_query_time >= time.time():
                 time.sleep(0.1 / self.api_rate_limit)
 
-        # Send the request
-        try:
-            method = method.lower()
-            if method == 'post':
-                data = self._session.post(base_url + function, params)
-            elif method == 'put':
-                data = self._session.put(base_url + function, params=params)
-            elif method == 'delete':
-                data = self._session.delete(base_url + function, params=params)
-            else:
-                data = self._session.get(base_url + function, params=params)
-            self._api_query_time = time.time()
-        except Exception:
-            raise APIError('Unable to connect to Shodan')
+        # Determine options for timeout settings and retrying
+        MAX_RETRIES = 5
+        TIMEOUT_SECONDS = 1
+        current_retries = 0
+        finished_request = False
+        while(not finished_request):
+            # Send the request
+            try:
+                method = method.lower()
+                if method == 'post':
+                    data = self._session.post(base_url + function, params, timeout=TIMEOUT_SECONDS)
+                elif method == 'put':
+                    data = self._session.put(base_url + function, params=params, timeout=TIMEOUT_SECONDS)
+                elif method == 'delete':
+                    data = self._session.delete(base_url + function, params=params, timeout=TIMEOUT_SECONDS)
+                else:
+                    data = self._session.get(base_url + function, params=params, timeout=TIMEOUT_SECONDS)
+                finished_request = True
+            except requests.exceptions.RequestException as e:
+                current_retries+=1
+                if current_retries >= MAX_RETRIES:
+                    raise APIError('Max retries reached!')
+            except Exception:
+                raise APIError('Unable to connect to Shodan')
 
         # Check that the API key wasn't rejected
         if data.status_code == 401:

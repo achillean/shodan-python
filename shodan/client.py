@@ -336,6 +336,8 @@ class Shodan:
             raise APIError(error)
         elif data.status_code == 403:
             raise APIError('Access denied (403 Forbidden)')
+        elif data.status_code == 502:
+            raise APIError('Bad Gateway (502)')
 
         # Parse the text into JSON
         try:

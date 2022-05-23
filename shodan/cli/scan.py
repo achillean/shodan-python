@@ -157,6 +157,7 @@ def scan_submit(wait, filename, force, verbose, netblocks):
 
         # Return immediately
         if wait <= 0:
+            click.echo('Scan ID: {}'.format(scan['id']))
             click.echo('Exiting now, not waiting for results. Use the API or website to retrieve the results of the scan.')
         else:
             # Setup an alert to wait for responses

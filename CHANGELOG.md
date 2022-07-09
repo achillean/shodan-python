@@ -1,6 +1,13 @@
 CHANGELOG
 =========
 
+1.28.0
+------
+* Add the ability to whitelist a specific vulnerability in Shodan Monitor instead of whitelisting the while IP:port
+* Show scan ID when scanning without showing results (credit to @seadog007)
+* Handle bad gateway errors (credit to @yaron-cider)
+
+
 1.27.0
 ------
 * New command: ``shodan alert export`` to save the current network monitoring configuration

@@ -721,8 +721,14 @@ class Shodan:
         """Disable the given trigger on the alert."""
         return self._request('/shodan/alert/{}/trigger/{}'.format(aid, trigger), {}, method='delete')
 
-    def ignore_alert_trigger_notification(self, aid, trigger, ip, port):
+    def ignore_alert_trigger_notification(self, aid, trigger, ip, port, vulns=None):
         """Ignore trigger notifications for the provided IP and port."""
+        # The "vulnerable" and "vulnerable_unverified" triggers let you specify specific vulnerabilities
+        # to ignore. If a user provides a "vulns" list and specifies on of those triggers then we'll use
+        # a different API endpoint.
+        if trigger in ('vulnerable', 'vulnerable_unverified') and vulns and isinstance(vulns, list):
+            return self._request('/shodan/alert/{}/trigger/{}/ignore/{}:{}/{}'.format(aid, trigger, ip, port, ','.join(vulns)), {}, method='put')
+        
         return self._request('/shodan/alert/{}/trigger/{}/ignore/{}:{}'.format(aid, trigger, ip, port), {}, method='put')
 
     def unignore_alert_trigger_notification(self, aid, trigger, ip, port):

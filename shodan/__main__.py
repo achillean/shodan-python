@@ -324,35 +324,46 @@ def download(limit, filename, query):
 @click.option('--history', help='Show the complete history of the host.', default=False, is_flag=True)
 @click.option('--filename', '-O', help='Save the host information in the given file (append if file exists).', default=None)
 @click.option('--save', '-S', help='Save the host information in the a file named after the IP (append if file exists).', default=False, is_flag=True)
-@click.argument('ip', metavar='<ip address>')
-def host(format, history, filename, save, ip):
+@click.option('--input', help='Read in a list of IP addresses from a given file.', default=None)
+@click.argument('ip', metavar='<ip address>', required=False)
+def host(format, history, filename, save, input, ip):
     """View all available information for an IP address"""
+    ip_list = list()
     key = get_api_key()
     api = shodan.Shodan(key)
 
-    try:
-        host = api.host(ip, history=history)
+    if input:
+        ip_list = helpers.read_from_file(input)
+    elif ip:
+        ip_list = [ip]
+    else:
+        print('Missing file path to list of IP addresses, or single IP address')
+        exit(1)
 
-        # Print the host information to the terminal using the user-specified format
-        HOST_PRINT[format](host, history=history)
+    for ip_addr in ip_list:
+        try:
+            host = api.host(ip_addr, history=history)
 
-        # Store the results
-        if filename or save:
-            if save:
-                filename = '{}.json.gz'.format(ip)
+            # Print the host information to the terminal using the user-specified format
+            HOST_PRINT[format](host, history=history)
 
-            # Add the appropriate extension if it's not there atm
-            if not filename.endswith('.json.gz'):
-                filename += '.json.gz'
+            # Store the results
+            if filename or save:
+                if save:
+                    filename = '{}.json.gz'.format('abc')
 
-            # Create/ append to the file
-            fout = helpers.open_file(filename)
+                # Add the appropriate extension if it's not there atm
+                if not filename.endswith('.json.gz'):
+                    filename += '.json.gz'
 
-            for banner in sorted(host['data'], key=lambda k: k['port']):
-                if 'placeholder' not in banner:
-                    helpers.write_banner(fout, banner)
-    except shodan.APIError as e:
-        raise click.ClickException(e.value)
+                # Create/ append to the file
+                fout = helpers.open_file(filename)
+
+                for banner in sorted(host['data'], key=lambda k: k['port']):
+                    if 'placeholder' not in banner:
+                        helpers.write_banner(fout, banner)
+        except shodan.APIError as e:
+            raise click.ClickException(e.value)
 
 
 @main.command()

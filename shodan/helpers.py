@@ -10,6 +10,19 @@ except NameError:
     basestring = str
 
 
+def read_from_file(file_path):
+    """Read in a list of IP addresses from a specified file
+
+    :param file_path: Path to file being parsed
+    :type file_path: str
+    :returns: list -- List of IP addresses to be queried
+    """
+    output = list()
+    with open(file_path, 'r') as fil:
+        output = fil.read().splitlines()
+
+    return output
+
 def create_facet_string(facets):
     """Converts a Python list of facets into a comma-separated string that can be understood by
     the Shodan API.

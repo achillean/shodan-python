@@ -255,10 +255,11 @@ def count(query):
 
 
 @main.command()
+@click.option('--fields', help='Specify the list of properties to download instead of grabbing the full banner', default=None, type=str)
 @click.option('--limit', help='The number of results you want to download. -1 to download all the data possible.', default=1000, type=int)
 @click.argument('filename', metavar='<filename>')
 @click.argument('query', metavar='<search query>', nargs=-1)
-def download(limit, filename, query):
+def download(fields, limit, filename, query):
     """Download search results and save them in a compressed JSON file."""
     key = get_api_key()
 
@@ -276,6 +277,10 @@ def download(limit, filename, query):
     # Add the appropriate extension if it's not there atm
     if not filename.endswith('.json.gz'):
         filename += '.json.gz'
+    
+    # Strip out any whitespace in the fields and turn them into an array
+    if fields is not None:
+        fields = [item.strip() for item in fields.split(',')]
 
     # Perform the search
     api = shodan.Shodan(key)
@@ -302,7 +307,7 @@ def download(limit, filename, query):
     with helpers.open_file(filename, 'w') as fout:
         count = 0
         try:
-            cursor = api.search_cursor(query, minify=False)
+            cursor = api.search_cursor(query, minify=False, fields=fields)
             with click.progressbar(cursor, length=limit) as bar:
                 for banner in bar:
                     helpers.write_banner(fout, banner)
@@ -485,7 +490,7 @@ def search(color, fields, limit, separator, query):
     # Perform the search
     api = shodan.Shodan(key)
     try:
-        results = api.search(query, limit=limit)
+        results = api.search(query, limit=limit, minify=False, fields=fields)
     except shodan.APIError as e:
         raise click.ClickException(e.value)
 

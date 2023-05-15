@@ -480,7 +480,7 @@ class Shodan:
         """
         return self._request('/shodan/scan/{}'.format(scan_id), {})
 
-    def search(self, query, page=1, limit=None, offset=None, facets=None, minify=True):
+    def search(self, query, page=1, limit=None, offset=None, facets=None, minify=True, fields=None):
         """Search the SHODAN database.
 
         :param query: Search query; identical syntax to the website
@@ -495,6 +495,8 @@ class Shodan:
         :type facets: str
         :param minify: (optional) Whether to minify the banner and only return the important data
         :type minify: bool
+        :param fields: (optional) List of properties that should get returned. This option is mutually exclusive with the "minify" parameter
+        :type fields: str
 
         :returns: A dictionary with 2 main items: matches and total. If facets have been provided then another property called "facets" will be available at the top-level of the dictionary. Visit the website for more detailed information.
         """
@@ -511,10 +513,13 @@ class Shodan:
 
         if facets:
             args['facets'] = create_facet_string(facets)
+        
+        if fields and isinstance(fields, list):
+            args['fields'] = ','.join(fields)
 
         return self._request('/shodan/host/search', args)
 
-    def search_cursor(self, query, minify=True, retries=5):
+    def search_cursor(self, query, minify=True, retries=5, fields=None):
         """Search the SHODAN database.
 
         This method returns an iterator that can directly be in a loop. Use it when you want to loop over
@@ -542,7 +547,7 @@ class Shodan:
 
         while results['matches']:
             try:
-                results = self.search(query, minify=minify, page=page)
+                results = self.search(query, minify=minify, page=page, fields=fields)
                 for banner in results['matches']:
                     try:
                         yield banner

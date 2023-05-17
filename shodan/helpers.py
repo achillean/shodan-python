@@ -122,8 +122,11 @@ def iterate_files(files, fast=False):
 
 
 def get_screenshot(banner):
-    if 'opts' in banner and 'screenshot' in banner['opts']:
+    if 'screenshot' in banner and banner['screenshot']:
+        return banner['screenshot']
+    elif 'opts' in banner and 'screenshot' in banner['opts']:
         return banner['opts']['screenshot']
+    
     return None
 
 

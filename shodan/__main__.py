@@ -795,7 +795,6 @@ def stream(streamer, fields, separator, datadir, asn, alert, countries, custom_f
         except shodan.APIError as e:
             raise click.ClickException(e.value)
         except Exception as e:
-            print(f'Something bad is happening\n{e}')
             # For other errors lets just wait a bit and try to reconnect again
             time.sleep(1)
 

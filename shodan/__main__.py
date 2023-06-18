@@ -794,6 +794,9 @@ def stream(streamer, fields, separator, datadir, asn, alert, countries, custom_f
             quit = True
         except shodan.APIError as e:
             raise click.ClickException(e.value)
+        except Exception as e:
+            # For other errors lets just wait a bit and try to reconnect again
+            time.sleep(1)
 
             # Create a new stream object to subscribe to
             stream = _create_stream(stream_type, stream_args, timeout=timeout)

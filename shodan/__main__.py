@@ -100,12 +100,17 @@ def convert(fields, input, format):
 
     Example: shodan convert data.json.gz kml
     """
+    file_size = 0
     # Check that the converter allows a custom list of fields
     converter_class = CONVERTERS.get(format)
     if fields:
         if not hasattr(converter_class, 'fields'):
             raise click.ClickException('File format doesnt support custom list of fields')
         converter_class.fields = [item.strip() for item in fields.split(',')]  # Use the custom fields the user specified
+
+    # Check file size of input
+    if os.path.exists(input):
+        file_size = os.path.getsize(input)
 
     # Get the basename for the input file
     basename = input.replace('.json.gz', '').replace('.json', '')
@@ -124,7 +129,7 @@ def convert(fields, input, format):
     # Initialize the file converter
     converter = converter_class(fout)
 
-    converter.process([input])
+    converter.process([input], file_size)
 
     finished_event.set()
     progress_bar_thread.join()

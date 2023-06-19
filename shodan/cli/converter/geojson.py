@@ -14,7 +14,7 @@ class GeoJsonConverter(Converter):
     def footer(self):
         self.fout.write("""{ }]}""")
 
-    def process(self, files):
+    def process(self, files, file_size):
         # Write the header
         self.header()
 

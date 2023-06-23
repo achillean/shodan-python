@@ -85,7 +85,7 @@ class Shodan:
 
         def __init__(self, parent):
             self.parent = parent
-        
+
         def create(self, provider, args, description=None):
             """Get the settings for the specified notifier that a user has configured.
 
@@ -101,9 +101,9 @@ class Shodan:
 
             if description:
                 args['description'] = description
-            
+
             return self.parent._request('/notifier', args, method='post')
-        
+
         def edit(self, nid, args):
             """Get the settings for the specified notifier that a user has configured.
 
@@ -114,7 +114,7 @@ class Shodan:
             :returns: dict -- fields are 'success' and 'id' of the notifier
             """
             return self.parent._request('/notifier/{}'.format(nid), args, method='put')
-        
+
         def get(self, nid):
             """Get the settings for the specified notifier that a user has configured.
 
@@ -137,7 +137,7 @@ class Shodan:
             :returns: A list of providers where each object describes a provider
             """
             return self.parent._request('/notifier/provider', {})
-        
+
         def remove(self, nid):
             """Delete the provided notifier.
 
@@ -253,6 +253,42 @@ class Shodan:
             """
             return self.parent._request('/org/member/{}'.format(user), {}, method='DELETE')['success']
 
+    class Trends:
+
+        def __init__(self, parent):
+            self.parent = parent
+
+        def search(self, query, facets):
+            """Search the Shodan historical database.
+
+            :param query: Search query; identical syntax to the website
+            :type query: str
+            :param facets: (optional) A list of properties to get summary information on
+            :type facets: str
+
+            :returns: A dictionary with 3 main items: matches, facets and total. Visit the website for more detailed information.
+            """
+            args = {
+                'query': query,
+                'facets': create_facet_string(facets),
+            }
+
+            return self.parent._request('/api/v1/search', args, service='trends')
+
+        def search_facets(self):
+            """This method returns a list of facets that can be used to get a breakdown of the top values for a property.
+
+            :returns: A list of strings where each is a facet name
+            """
+            return self.parent._request('/api/v1/search/facets', {}, service='trends')
+
+        def search_filters(self):
+            """This method returns a list of search filters that can be used in the search query.
+
+            :returns: A list of strings where each is a filter name
+            """
+            return self.parent._request('/api/v1/search/filters', {}, service='trends')
+
     def __init__(self, key, proxies=None):
         """Initializes the API object.
 
@@ -264,9 +300,11 @@ class Shodan:
         self.api_key = key
         self.base_url = 'https://api.shodan.io'
         self.base_exploits_url = 'https://exploits.shodan.io'
+        self.base_trends_url = 'https://trends.shodan.io'
         self.data = self.Data(self)
         self.dns = self.Dns(self)
         self.exploits = self.Exploits(self)
+        self.trends = self.Trends(self)
         self.labs = self.Labs(self)
         self.notifier = self.Notifier(self)
         self.org = self.Organization(self)
@@ -297,6 +335,7 @@ class Shodan:
         base_url = {
             'shodan': self.base_url,
             'exploits': self.base_exploits_url,
+            'trends': self.base_trends_url,
         }.get(service, 'shodan')
 
         # Wait for API rate limit
@@ -513,7 +552,7 @@ class Shodan:
 
         if facets:
             args['facets'] = create_facet_string(facets)
-        
+
         if fields and isinstance(fields, list):
             args['fields'] = ','.join(fields)
 
@@ -733,17 +772,17 @@ class Shodan:
         # a different API endpoint.
         if trigger in ('vulnerable', 'vulnerable_unverified') and vulns and isinstance(vulns, list):
             return self._request('/shodan/alert/{}/trigger/{}/ignore/{}:{}/{}'.format(aid, trigger, ip, port, ','.join(vulns)), {}, method='put')
-        
+
         return self._request('/shodan/alert/{}/trigger/{}/ignore/{}:{}'.format(aid, trigger, ip, port), {}, method='put')
 
     def unignore_alert_trigger_notification(self, aid, trigger, ip, port):
         """Re-enable trigger notifications for the provided IP and port"""
         return self._request('/shodan/alert/{}/trigger/{}/ignore/{}:{}'.format(aid, trigger, ip, port), {}, method='delete')
-    
+
     def add_alert_notifier(self, aid, nid):
         """Enable the given notifier for an alert that has triggers enabled."""
         return self._request('/shodan/alert/{}/notifier/{}'.format(aid, nid), {}, method='put')
-    
+
     def remove_alert_notifier(self, aid, nid):
         """Remove the given notifier for an alert that has triggers enabled."""
         return self._request('/shodan/alert/{}/notifier/{}'.format(aid, nid), {}, method='delete')

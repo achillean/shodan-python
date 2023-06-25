@@ -41,7 +41,7 @@ class ExcelConverter(Converter):
         'http.title': 'Website Title',
     }
 
-    def process(self, files):
+    def process(self, files, file_size):
         # Get the filename from the already-open file handle
         filename = self.fout.name
 
@@ -50,6 +50,10 @@ class ExcelConverter(Converter):
 
         # Create the new workbook
         workbook = Workbook(filename)
+
+        # Check if Excel file is larger than 4GB
+        if file_size > 4e9:
+            workbook.use_zip64()
 
         # Define some common styles/ formats
         bold = workbook.add_format({

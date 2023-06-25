@@ -15,7 +15,7 @@ class ImagesConverter(Converter):
     # the user know where the images have been stored.
     dirname = None
 
-    def process(self, files):
+    def process(self, files, file_size):
         # Get the filename from the already-open file handle and use it as
         # the directory name to store the images.
         self.dirname = self.fout.name[:-7] + '-images'

@@ -51,8 +51,8 @@ class ExcelConverter(Converter):
         # Create the new workbook
         workbook = Workbook(filename)
 
-        # Check if Excel file is larger than 5GB
-        if file_size > 5e9:
+        # Check if Excel file is larger than 4GB
+        if file_size > 4e9:
             workbook.use_zip64()
 
         # Define some common styles/ formats

@@ -22,7 +22,8 @@ class ShodanTests(unittest.TestCase):
     }
 
     def setUp(self):
-        self.api = shodan.Shodan(open('SHODAN-API-KEY').read().strip())
+        with open('SHODAN-API-KEY') as f:
+            self.api = shodan.Shodan(f.read().strip())
 
     def test_search_simple(self):
         results = self.api.search(self.QUERIES['simple'])
@@ -114,6 +115,24 @@ class ShodanTests(unittest.TestCase):
         self.assertIn('facets', results)
         self.assertTrue(results['facets']['source'])
         self.assertTrue(len(results['facets']['author']) == 1)
+
+    def test_trends_search(self):
+        results = self.api.trends.search('apache', facets=[('product', 10)])
+        self.assertIn('matches', results)
+        self.assertIn('facets', results)
+        self.assertIn('total', results)
+        self.assertTrue(results['matches'])
+        self.assertIn('2023-06', [bucket['key'] for bucket in results['facets']['product']])
+
+    def test_trends_search_filters(self):
+        results = self.api.trends.search_filters()
+        self.assertIn('has_ipv6', results)
+        self.assertNotIn('http.html', results)
+
+    def test_trends_search_facets(self):
+        results = self.api.trends.search_facets()
+        self.assertIn('product', results)
+        self.assertNotIn('cpe', results)
 
     # Test error responses
     def test_invalid_key(self):

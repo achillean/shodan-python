@@ -22,6 +22,7 @@ The following commands are currently supported:
     search
     stats
     stream
+    trends
 
 """
 
@@ -35,6 +36,7 @@ import shodan.helpers as helpers
 import threading
 import requests
 import time
+import json
 
 # The file converters that are used to go from .json.gz to various other formats
 from shodan.cli.converter import CsvConverter, KmlConverter, GeoJsonConverter, ExcelConverter, ImagesConverter
@@ -282,7 +284,7 @@ def download(fields, limit, filename, query):
     # Add the appropriate extension if it's not there atm
     if not filename.endswith('.json.gz'):
         filename += '.json.gz'
-    
+
     # Strip out any whitespace in the fields and turn them into an array
     if fields is not None:
         fields = [item.strip() for item in fields.split(',')]
@@ -802,6 +804,88 @@ def stream(streamer, fields, separator, datadir, asn, alert, countries, custom_f
 
             # Create a new stream object to subscribe to
             stream = _create_stream(stream_type, stream_args, timeout=timeout)
+
+
+@main.command()
+@click.option('--filename', '-O', help='Save the full results in the given file (append if file exists).', default=None)
+@click.option('--save', '-S', help='Save the full results in the a file named after the query (append if file exists).', default=False, is_flag=True)
+@click.option('--facets', help='List of facets to get summary information on.', required=True, type=str)
+@click.argument('query', metavar='<search query>', nargs=-1)
+def trends(filename, save, facets, query):
+    """Search Shodan historical database"""
+    key = get_api_key()
+    api = shodan.Shodan(key)
+
+    # Create the query string out of the provided tuple
+    query = ' '.join(query).strip()
+    facets = facets.strip()
+
+    # Make sure the user didn't supply an empty query or facets
+    if query == '':
+        raise click.ClickException('Empty search query')
+
+    if facets == '':
+        raise click.ClickException('Empty search facets')
+
+    # Convert comma-separated facets string to list
+    parsed_facets = []
+    for facet in facets.split(','):
+        parts = facet.strip().split(":")
+        if len(parts) > 1:
+            parsed_facets.append((parts[0], parts[1]))
+        else:
+            parsed_facets.append((parts[0]))
+
+    # Perform the search
+    try:
+        results = api.trends.search(query, facets=parsed_facets)
+    except shodan.APIError as e:
+        raise click.ClickException(e.value)
+
+    # Error out if no results were found
+    if results['total'] == 0:
+        raise click.ClickException('No search results found')
+
+    result_facets = list(results['facets'].keys())
+
+    # Save the results first to file if user request
+    if filename or save:
+        if not filename:
+            filename = '{}-trends.json.gz'.format(query.replace(' ', '-'))
+        elif not filename.endswith('.json.gz'):
+            filename += '.json.gz'
+
+        # Create/ append to the file
+        with helpers.open_file(filename) as fout:
+            for index, match in enumerate(results['matches']):
+                # Append facet info to make up a line
+                match["facets"] = {}
+                for facet in result_facets:
+                    match["facets"][facet] = results['facets'][facet][index]['values']
+                    line = json.dumps(match) + '\n'
+                    fout.write(line.encode('utf-8'))
+
+        click.echo(click.style(u'Saved results into file {}'.format(filename), 'green'))
+
+    # We buffer the entire output so we can use click's pager functionality
+    output = u''
+
+    # Output example:
+    # 2017-06
+    #   os
+    #     Linux 3.x                                                        146,502
+    #     Windows 7 or 8                                                     2,189
+    for index, match in enumerate(results['matches']):
+        output += click.style(match['month'] + u'\n', fg='green')
+        if match['count'] > 0:
+            for facet in result_facets:
+                output += click.style(u'  {}\n'.format(facet), fg='cyan')
+                for bucket in results['facets'][facet][index]['values']:
+                    output += u'    {:60}{}\n'.format(click.style(bucket['value'], bold=True), click.style(u'{:20,d}'.format(bucket['count']), fg='green'))
+        else:
+            output += u'{}\n'.format(click.style('N/A', bold=True))
+
+    click.echo_via_pager(output)
 
 
 @main.command()

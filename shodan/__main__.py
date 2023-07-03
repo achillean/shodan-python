@@ -279,7 +279,7 @@ def download(fields, limit, filename, query):
     # Add the appropriate extension if it's not there atm
     if not filename.endswith('.json.gz'):
         filename += '.json.gz'
-    
+
     # Strip out any whitespace in the fields and turn them into an array
     if fields is not None:
         fields = [item.strip() for item in fields.split(',')]
@@ -804,10 +804,9 @@ def stream(streamer, fields, separator, datadir, asn, alert, countries, custom_f
 @main.command()
 @click.option('--filename', '-O', help='Save the full results in the given file (append if file exists).', default=None)
 @click.option('--save', '-S', help='Save the full results in the a file named after the query (append if file exists).', default=False, is_flag=True)
-@click.option('--separator', help='The separator between the properties of the search results.', default='\t')
 @click.option('--facets', help='List of facets to get summary information on.', required=True, type=str)
 @click.argument('query', metavar='<search query>', nargs=-1)
-def trends(filename, save, separator, facets, query):
+def trends(filename, save, facets, query):
     """Search Shodan historical database"""
     key = get_api_key()
     api = shodan.Shodan(key)
@@ -869,15 +868,17 @@ def trends(filename, save, separator, facets, query):
     # Output example:
     # 2017-06
     #   os
-    #     Linux 3.x   384148
-    #     Windows 7 or 8      25531
+    #     Linux 3.x                                                        146,502
+    #     Windows 7 or 8                                                     2,189
     for index, match in enumerate(results['matches']):
         output += click.style(match['month'] + u'\n', fg='green')
-
-        for facet in result_facets:
-            output += '  ' + facet + u'\n'
-            for bucket in results['facets'][facet][index]['values']:
-                output += '    ' + str(bucket['value']) + separator + str(bucket['count']) + u'\n'
+        if match['count'] > 0:
+            for facet in result_facets:
+                output += click.style(u'  {}\n'.format(facet), fg='cyan')
+                for bucket in results['facets'][facet][index]['values']:
+                    output += u'    {:60}{}\n'.format(click.style(bucket['value'], bold=True), click.style(u'{:20,d}'.format(bucket['count']), fg='green'))
+        else:
+            output += u'{}\n'.format(click.style('N/A', bold=True))
 
     click.echo_via_pager(output)
 

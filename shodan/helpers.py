@@ -167,7 +167,7 @@ def humanize_bytes(byte_count, precision=1):
     if byte_count == 1:
         return '1 byte'
     if byte_count < 1024:
-        '{0:0.{1}f} {2}'.format(byte_count, 0, 'bytes')
+        return '{0:0.{1}f} {2}'.format(byte_count, 0, 'bytes')
 
     suffixes = ['KB', 'MB', 'GB', 'TB', 'PB']
     multiple = 1024.0  # .0 to force float on python 2

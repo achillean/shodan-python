@@ -43,11 +43,25 @@ def escape_data(args):
 
 
 def timestr():
-    return datetime.datetime.utcnow().strftime('%Y-%m-%d')
+    return datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
 
 
 def open_streaming_file(directory, timestr, compresslevel=9):
+    if directory == '.':
+        return gzip.open('{}.json.gz'.format(timestr), 'a', compresslevel)
+
     return gzip.open('{}/{}.json.gz'.format(directory, timestr), 'a', compresslevel)
+
+
+def check_streaming_file(directory, timestr, banner, size_param):
+    mb_size = 1000000
+
+    if directory == '.':
+        file_size = os.path.getsize(f'{timestr}.json.gz')
+    else:
+        file_size = os.path.getsize(f'{directory}/{timestr}.json.gz')
+
+    return (file_size + sys.getsizeof(banner)) <= (size_param * mb_size)
 
 
 def get_banner_field(banner, flat_field):

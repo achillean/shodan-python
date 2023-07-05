@@ -45,7 +45,7 @@ from shodan.cli.converter import CsvConverter, KmlConverter, GeoJsonConverter, E
 from shodan.cli.settings import SHODAN_CONFIG_DIR, COLORIZE_FIELDS
 
 # Helper methods
-from shodan.cli.helpers import async_spinner, get_api_key, escape_data, timestr, open_streaming_file, get_banner_field, match_filters
+from shodan.cli.helpers import async_spinner, get_api_key, escape_data, timestr, open_streaming_file, get_banner_field, match_filters, check_streaming_file
 from shodan.cli.host import HOST_PRINT
 
 # Allow 3rd-parties to develop custom commands
@@ -645,7 +645,8 @@ def stats(limit, facets, filename, query):
 @click.option('--timeout', help='Timeout. Should the shodan stream cease to send data, then timeout after <timeout> seconds.', default=0, type=int)
 @click.option('--color/--no-color', default=True)
 @click.option('--quiet', help='Disable the printing of information to the screen.', is_flag=True)
-def stream(streamer, fields, separator, datadir, asn, alert, countries, custom_filters, ports, tags, vulns, limit, compresslevel, timeout, color, quiet):
+@click.option('--chunk', help='Represents the maximum file size (in MB) of each file written to disk that contain streaming data', default=100, type=int)
+def stream(streamer, fields, separator, datadir, asn, alert, countries, custom_filters, ports, tags, vulns, limit, compresslevel, timeout, color, quiet, chunk):
     """Stream data in real-time."""
     # Setup the Shodan API
     key = get_api_key()
@@ -758,10 +759,17 @@ def stream(streamer, fields, separator, datadir, asn, alert, countries, custom_f
                 # Write the data to the file
                 if datadir:
                     cur_time = timestr()
-                    if cur_time != last_time:
+                    # Compare YYYY-mm-dd
+                    if cur_time[0:10] != last_time[0:10]:
                         last_time = cur_time
                         fout.close()
-                        fout = open_streaming_file(datadir, last_time)
+
+                    elif not check_streaming_file(datadir, last_time, banner, chunk):
+                        last_time = timestr()
+                        fout.close()
+                        fout = open_streaming_file(datadir, last_time, compresslevel)
+
+                    fout = open_streaming_file(datadir, last_time)
                     helpers.write_banner(fout, banner)
 
                 # Print the banner information to stdout
@@ -798,7 +806,7 @@ def stream(streamer, fields, separator, datadir, asn, alert, countries, custom_f
             quit = True
         except shodan.APIError as e:
             raise click.ClickException(e.value)
-        except Exception:
+        except Exception as e:
             # For other errors lets just wait a bit and try to reconnect again
             time.sleep(1)
 

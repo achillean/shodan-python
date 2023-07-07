@@ -809,7 +809,7 @@ def stream(streamer, fields, separator, datadir, asn, alert, countries, custom_f
 @main.command()
 @click.option('--filename', '-O', help='Save the full results in the given file (append if file exists).', default=None)
 @click.option('--save', '-S', help='Save the full results in the a file named after the query (append if file exists).', default=False, is_flag=True)
-@click.option('--facets', help='List of facets to get summary information on.', required=True, type=str)
+@click.argument('facets', metavar='<facet>')
 @click.argument('query', metavar='<search query>', nargs=-1)
 def trends(filename, save, facets, query):
     """Search Shodan historical database"""

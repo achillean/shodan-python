@@ -3,6 +3,7 @@ import csv
 import gzip
 import json
 import shodan
+from tldextract import extract
 
 from collections import defaultdict
 from operator import itemgetter
@@ -125,9 +126,15 @@ def alert_domain(domain, triggers):
     try:
         # Grab a list of IPs for the domain
         domain = domain.lower()
+        domain_parse = extract(domain)
         click.secho('Looking up domain information...', dim=True)
         info = api.dns.domain_info(domain, type='A')
-        domain_ips = set([record['value'] for record in info['data']])
+
+        if domain_parse.subdomain:
+            domain_ips = set([record['value'] for record in info['data']
+                              if record['subdomain'] == domain_parse.subdomain])
+        else:
+            domain_ips = set([record['value'] for record in info['data']])
 
         # Create the actual alert
         click.secho('Creating alert...', dim=True)

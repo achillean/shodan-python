@@ -93,7 +93,7 @@ main.add_command(scan)
 
 @main.command()
 @click.option('--fields', help='List of properties to output.', default=None)
-@click.argument('input', metavar='<input file>')
+@click.argument('input', metavar='<input file>', type=click.Path(exists=True))
 @click.argument('format', metavar='<output format>', type=click.Choice(CONVERTERS.keys()))
 def convert(fields, input, format):
     """Convert the given input data file into a different format. The following file formats are supported:
@@ -110,9 +110,8 @@ def convert(fields, input, format):
             raise click.ClickException('File format doesnt support custom list of fields')
         converter_class.fields = [item.strip() for item in fields.split(',')]  # Use the custom fields the user specified
 
-    # Check file size of input
-    if os.path.exists(input):
-        file_size = os.path.getsize(input)
+    # click.Path ensures that file path exists
+    file_size = os.path.getsize(input)
 
     # Get the basename for the input file
     basename = input.replace('.json.gz', '').replace('.json', '')

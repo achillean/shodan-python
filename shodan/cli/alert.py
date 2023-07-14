@@ -4,6 +4,7 @@ import gzip
 import json
 import shodan
 from tldextract import extract
+from ipaddress import ip_address
 
 from collections import defaultdict
 from operator import itemgetter
@@ -132,9 +133,15 @@ def alert_domain(domain, triggers):
 
         if domain_parse.subdomain:
             domain_ips = set([record['value'] for record in info['data']
-                              if record['subdomain'] == domain_parse.subdomain])
+                              if record['subdomain'] == domain_parse.subdomain and
+                              not ip_address(record['value']).is_private])
         else:
-            domain_ips = set([record['value'] for record in info['data']])
+            domain_ips = set([record['value'] for record in info['data']
+                              if not ip_address(record['value']).is_private])
+
+        if not domain_ips:
+            raise click.ClickException('No external IPs were found to be associated with this domain. '
+                                       'No alert was created.')
 
         # Create the actual alert
         click.secho('Creating alert...', dim=True)

@@ -4,6 +4,7 @@ import gzip
 import json
 import shodan
 from tldextract import extract
+from ipaddress import ip_address
 
 from collections import defaultdict
 from operator import itemgetter
@@ -120,6 +121,7 @@ def alert_create(name, netblocks):
 @click.option('--triggers', help='List of triggers to enable', default='malware,industrial_control_system,internet_scanner,iot,open_database,new_service,ssl_expired,vulnerable')
 def alert_domain(domain, triggers):
     """Create a network alert based on a domain name"""
+    flag = True
     key = get_api_key()
 
     api = shodan.Shodan(key)
@@ -132,22 +134,30 @@ def alert_domain(domain, triggers):
 
         if domain_parse.subdomain:
             domain_ips = set([record['value'] for record in info['data']
-                              if record['subdomain'] == domain_parse.subdomain])
+                              if record['subdomain'] == domain_parse.subdomain and
+                              not ip_address(record['value']).is_private])
         else:
-            domain_ips = set([record['value'] for record in info['data']])
+            domain_ips = set([record['value'] for record in info['data']
+                              if not ip_address(record['value']).is_private])
 
-        # Create the actual alert
-        click.secho('Creating alert...', dim=True)
-        alert = api.create_alert('__domain: {}'.format(domain), list(domain_ips))
+        if not domain_ips:
+            flag = False
+            click.secho('No external IPs were found to be associated with this domain. '
+                        'No alert was created.', dim=True)
+        else:
+            # Create the actual alert
+            click.secho('Creating alert...', dim=True)
+            alert = api.create_alert('__domain: {}'.format(domain), list(domain_ips))
 
-        # Enable the triggers so it starts getting managed by Shodan Monitor
-        click.secho('Enabling triggers...', dim=True)
-        api.enable_alert_trigger(alert['id'], triggers)
+            # Enable the triggers so it starts getting managed by Shodan Monitor
+            click.secho('Enabling triggers...', dim=True)
+            api.enable_alert_trigger(alert['id'], triggers)
     except shodan.APIError as e:
         raise click.ClickException(e.value)
 
-    click.secho('Successfully created domain alert!', fg='green')
-    click.secho('Alert ID: {}'.format(alert['id']), fg='cyan')
+    if flag:
+        click.secho('Successfully created domain alert!', fg='green')
+        click.secho('Alert ID: {}'.format(alert['id']), fg='cyan')
 
 
 @alert.command(name='download')

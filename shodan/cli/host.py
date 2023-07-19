@@ -91,8 +91,20 @@ def host_print_pretty(host, history=False):
             click.echo(click.style('\t\t({})'.format(date), fg='white', dim=True), nl=False)
         click.echo('')
 
+        # Show optional HTTP information
+        if 'http' in banner:
+            if 'title' in banner['http'] and banner['http']['title']:
+                click.echo('\t|-- HTTP title: {}'.format(banner['http']['title']))
+
         # Show optional ssl info
         if 'ssl' in banner:
+            if 'cert' in banner['ssl'] and banner['ssl']['cert']:
+                if 'issuer' in banner['ssl']['cert'] and banner['ssl']['cert']['issuer']:
+                    issuer = ', '.join(['{}={}'.format(key, value) for key, value in banner['ssl']['cert']['issuer'].items()])
+                    click.echo('\t|-- Cert Issuer: {}'.format(issuer))
+                if 'subject' in banner['ssl']['cert'] and banner['ssl']['cert']['subject']:
+                    subject = ', '.join(['{}={}'.format(key, value) for key, value in banner['ssl']['cert']['subject'].items()])
+                    click.echo('\t|-- Cert Subject: {}'.format(subject))
             if 'versions' in banner['ssl'] and banner['ssl']['versions']:
                 click.echo('\t|-- SSL Versions: {}'.format(', '.join([item for item in sorted(banner['ssl']['versions']) if not version.startswith('-')])))
             if 'dhparams' in banner['ssl'] and banner['ssl']['dhparams']:

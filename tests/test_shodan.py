@@ -118,11 +118,18 @@ class ShodanTests(unittest.TestCase):
 
     def test_trends_search(self):
         results = self.api.trends.search('apache', facets=[('product', 10)])
+        self.assertIn('total', results)
         self.assertIn('matches', results)
         self.assertIn('facets', results)
-        self.assertIn('total', results)
         self.assertTrue(results['matches'])
         self.assertIn('2023-06', [bucket['key'] for bucket in results['facets']['product']])
+
+        results = self.api.trends.search('apache', facets=[])
+        self.assertIn('total', results)
+        self.assertIn('matches', results)
+        self.assertNotIn('facets', results)
+        self.assertTrue(results['matches'])
+        self.assertIn('2023-06', [match['month'] for match in results['matches']])
 
     def test_trends_search_filters(self):
         results = self.api.trends.search_filters()

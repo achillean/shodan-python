@@ -806,9 +806,9 @@ def stream(streamer, fields, separator, datadir, asn, alert, countries, custom_f
 
 
 @main.command()
+@click.option('--facets', help='List of facets to get summary information on, if empty then show query total results over time', default='', type=str)
 @click.option('--filename', '-O', help='Save the full results in the given file (append if file exists).', default=None)
 @click.option('--save', '-S', help='Save the full results in the a file named after the query (append if file exists).', default=False, is_flag=True)
-@click.argument('facets', metavar='<facet>')
 @click.argument('query', metavar='<search query>', nargs=-1)
 def trends(filename, save, facets, query):
     """Search Shodan historical database"""
@@ -823,12 +823,12 @@ def trends(filename, save, facets, query):
     if query == '':
         raise click.ClickException('Empty search query')
 
-    if facets == '':
-        raise click.ClickException('Empty search facets')
-
     # Convert comma-separated facets string to list
     parsed_facets = []
     for facet in facets.split(','):
+        if not facet:
+            continue
+
         parts = facet.strip().split(":")
         if len(parts) > 1:
             parsed_facets.append((parts[0], parts[1]))
@@ -845,7 +845,9 @@ def trends(filename, save, facets, query):
     if results['total'] == 0:
         raise click.ClickException('No search results found')
 
-    result_facets = list(results['facets'].keys())
+    result_facets = []
+    if results.get("facets"):
+        result_facets = list(results["facets"].keys())
 
     # Save the results first to file if user request
     if filename or save:
@@ -858,31 +860,43 @@ def trends(filename, save, facets, query):
         with helpers.open_file(filename) as fout:
             for index, match in enumerate(results['matches']):
                 # Append facet info to make up a line
-                match["facets"] = {}
-                for facet in result_facets:
-                    match["facets"][facet] = results['facets'][facet][index]['values']
-                    line = json.dumps(match) + '\n'
-                    fout.write(line.encode('utf-8'))
+                if result_facets:
+                    match["facets"] = {}
+                    for facet in result_facets:
+                        match["facets"][facet] = results['facets'][facet][index]['values']
+
+                line = json.dumps(match) + '\n'
+                fout.write(line.encode('utf-8'))
 
         click.echo(click.style(u'Saved results into file {}'.format(filename), 'green'))
 
     # We buffer the entire output so we can use click's pager functionality
     output = u''
 
-    # Output example:
+    # Output examples:
+    # - Facet by os
     # 2017-06
     #   os
     #     Linux 3.x                                                        146,502
     #     Windows 7 or 8                                                     2,189
-    for index, match in enumerate(results['matches']):
-        output += click.style(match['month'] + u'\n', fg='green')
-        if match['count'] > 0:
-            for facet in result_facets:
-                output += click.style(u'  {}\n'.format(facet), fg='cyan')
-                for bucket in results['facets'][facet][index]['values']:
-                    output += u'    {:60}{}\n'.format(click.style(bucket['value'], bold=True), click.style(u'{:20,d}'.format(bucket['count']), fg='green'))
-        else:
-            output += u'{}\n'.format(click.style('N/A', bold=True))
+    #
+    # - Without facets
+    # 2017-06               19,799,459
+    # 2017-07               21,077,099
+    if result_facets:
+        for index, match in enumerate(results['matches']):
+            output += click.style(match['month'] + u'\n', fg='green')
+            if match['count'] > 0:
+                for facet in result_facets:
+                    output += click.style(u'  {}\n'.format(facet), fg='cyan')
+                    for bucket in results['facets'][facet][index]['values']:
+                        output += u'    {:60}{}\n'.format(click.style(bucket['value'], bold=True), click.style(u'{:20,d}'.format(bucket['count']), fg='green'))
+            else:
+                output += u'{}\n'.format(click.style('N/A', bold=True))
+    else:
+        # Without facets, show query total results over time
+        for index, match in enumerate(results['matches']):
+            output += u'{:20}{}\n'.format(click.style(match['month'], bold=True), click.style(u'{:20,d}'.format(match['count']), fg='green'))
 
     click.echo_via_pager(output)
 

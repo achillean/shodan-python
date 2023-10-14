@@ -7,6 +7,7 @@ This module implements the Shodan API.
 
 :copyright: (c) 2014- by John Matherly
 """
+import math
 import time
 
 import requests
@@ -576,15 +577,23 @@ class Shodan:
         :returns: A search cursor that can be used as an iterator/ generator.
         """
         page = 1
+        total_pages = 0
         tries = 0
 
-        # Placeholder results object to make the while loop below easier
-        results = {
-            'matches': [True],
-            'total': None,
-        }
+        # Grab the initial page and use the total to calculate the expected number of pages
+        results = self.search(query, minify=minify, page=page, fields=fields)
+        if results['total']:
+            total_pages = int(math.ceil(results['total'] / 100))
+                    
+        for banner in results['matches']:
+            try:
+                yield banner
+            except GeneratorExit:
+                return  # exit out of the function
+        page += 1
 
-        while results['matches']:
+        # Keep iterating over the results from page 2 onwards
+        while page <= total_pages:
             try:
                 results = self.search(query, minify=minify, page=page, fields=fields)
                 for banner in results['matches']:

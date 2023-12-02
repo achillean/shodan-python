@@ -37,6 +37,7 @@ import threading
 import requests
 import time
 import json
+import pandas
 
 # The file converters that are used to go from .json.gz to various other formats
 from shodan.cli.converter import CsvConverter, KmlConverter, GeoJsonConverter, ExcelConverter, ImagesConverter
@@ -121,6 +122,7 @@ def convert(fields, input, format):
 
     # Open the output file
     fout = open(filename, 'w')
+    df = pandas.read_json(input, orient='records', lines=True, compression='gzip')
 
     # Start a spinner
     finished_event = threading.Event()
@@ -128,7 +130,7 @@ def convert(fields, input, format):
     progress_bar_thread.start()
 
     # Initialize the file converter
-    converter = converter_class(fout)
+    converter = converter_class(fout, df, basename)
 
     converter.process([input], file_size)
 

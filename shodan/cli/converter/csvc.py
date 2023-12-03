@@ -49,6 +49,6 @@ class CsvConverter(Converter):
 
     def process(self, files, file_size):
         try:
-            self.df.to_csv(f'{self.basename}.csv')
+            self.df.to_csv(f'{self.basename}.csv', index=False)
         except Exception as e:
             raise RuntimeError(f"Error converting file to csv.\n{e}")

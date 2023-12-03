@@ -122,7 +122,7 @@ def convert(fields, input, format):
 
     # Open the output file
     fout = open(filename, 'w')
-    df = pandas.read_json(input, orient='records', lines=True, compression='gzip')
+    df = pandas.read_json(input, orient='records', lines=True, compression='gzip', precise_float=True)
 
     # Start a spinner
     finished_event = threading.Event()

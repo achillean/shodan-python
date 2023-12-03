@@ -37,7 +37,7 @@ import threading
 import requests
 import time
 import json
-from shodan.cli.validation import check_file_format, check_input_file_type
+from shodan.cli.validation import check_input_file_type
 
 # The file converters that are used to go from .json.gz to various other formats
 from shodan.cli.converter import CsvConverter, KmlConverter, GeoJsonConverter, ExcelConverter, ImagesConverter

@@ -8,13 +8,14 @@ This module implements the Shodan API.
 :copyright: (c) 2014- by John Matherly
 """
 import math
+import os
 import time
 
 import requests
 import json
 
 from .exception import APIError
-from .helpers import api_request, create_facet_string
+from .helpers import create_facet_string
 from .stream import Stream
 
 
@@ -314,11 +315,15 @@ class Shodan:
         self._session = requests.Session()
         self.api_rate_limit = 1  # Requests per second
         self._api_query_time = None
+
         if proxies:
             self._session.proxies.update(proxies)
             self._session.trust_env = False
+        
+        if os.environ.get('SHODAN_API_URL'):
+            self.base_url = os.environ.get('SHODAN_API_URL')
 
-    def _request(self, function, params, service='shodan', method='get'):
+    def _request(self, function, params, service='shodan', method='get', json_data=None):
         """General-purpose function to create web requests to SHODAN.
 
         Arguments:
@@ -348,7 +353,13 @@ class Shodan:
         try:
             method = method.lower()
             if method == 'post':
-                data = self._session.post(base_url + function, params)
+                if json_data:
+                    data = self._session.post(base_url + function, params=params,
+                                            data=json.dumps(json_data),
+                                            headers={'content-type': 'application/json'},
+                        )
+                else:
+                    data = self._session.post(base_url + function, params)
             elif method == 'put':
                 data = self._session.put(base_url + function, params=params)
             elif method == 'delete':
@@ -711,8 +722,7 @@ class Shodan:
             'expires': expires,
         }
 
-        response = api_request(self.api_key, '/shodan/alert', data=data, params={}, method='post',
-                               proxies=self._session.proxies)
+        response = self._request('/shodan/alert', params={}, json_data=data, method='post')
 
         return response
 
@@ -732,8 +742,7 @@ class Shodan:
             },
         }
 
-        response = api_request(self.api_key, '/shodan/alert/{}'.format(aid), data=data, params={}, method='post',
-                               proxies=self._session.proxies)
+        response = self._request('/shodan/alert/{}'.format(aid), params={}, json_data=data, method='post')
 
         return response
 
@@ -744,9 +753,9 @@ class Shodan:
         else:
             func = '/shodan/alert/info'
 
-        response = api_request(self.api_key, func, params={
+        response = self._request(func, params={
             'include_expired': include_expired,
-        }, proxies=self._session.proxies)
+        })
 
         return response
 
@@ -754,8 +763,7 @@ class Shodan:
         """Delete the alert with the given ID."""
         func = '/shodan/alert/{}'.format(aid)
 
-        response = api_request(self.api_key, func, params={}, method='delete',
-                               proxies=self._session.proxies)
+        response = self._request(func, params={}, method='delete')
 
         return response
 

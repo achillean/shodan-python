@@ -37,6 +37,7 @@ import threading
 import requests
 import time
 import json
+from shodan.cli.validation import check_input_file_type
 
 # The file converters that are used to go from .json.gz to various other formats
 from shodan.cli.converter import CsvConverter, KmlConverter, GeoJsonConverter, ExcelConverter, ImagesConverter
@@ -93,7 +94,7 @@ main.add_command(scan)
 
 @main.command()
 @click.option('--fields', help='List of properties to output.', default=None)
-@click.argument('input', metavar='<input file>', type=click.Path(exists=True))
+@click.argument('input', metavar='<input file>', type=click.Path(exists=True), callback=check_input_file_type)
 @click.argument('format', metavar='<output format>', type=click.Choice(CONVERTERS.keys()))
 def convert(fields, input, format):
     """Convert the given input data file into a different format. The following file formats are supported:

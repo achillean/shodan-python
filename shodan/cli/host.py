@@ -113,6 +113,13 @@ def host_print_pretty(host, history=False):
                 if 'fingerprint' in banner['ssl']['dhparams']:
                     click.echo('\t\t{:15s}{}'.format('Fingerprint:', banner['ssl']['dhparams']['fingerprint']))
 
+        # Show optional ssh info
+        if 'ssh' in banner:
+            if 'key' in banner['ssh'] and banner['ssh']['key']:
+                click.echo('\t|-- SSH Key: {}'.format(banner['ssh']['key'].replace('\n','').strip()))
+            if 'fingerprint' in banner['ssh'] and banner['ssh']['fingerprint']:
+                click.echo('\t|-- SSH Fingerprint: {}'.format(banner['ssh']['fingerprint']))
+
 
 def host_print_tsv(host, history=False):
     """Show the host information in a succinct, grep-friendly manner."""

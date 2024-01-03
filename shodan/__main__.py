@@ -37,6 +37,7 @@ import threading
 import requests
 import time
 import json
+from shodan.cli.validation import check_input_file_type, check_filename_filepath, check_not_null
 
 # The file converters that are used to go from .json.gz to various other formats
 from shodan.cli.converter import CsvConverter, KmlConverter, GeoJsonConverter, ExcelConverter, ImagesConverter
@@ -93,7 +94,7 @@ main.add_command(scan)
 
 @main.command()
 @click.option('--fields', help='List of properties to output.', default=None)
-@click.argument('input', metavar='<input file>', type=click.Path(exists=True))
+@click.argument('input', metavar='<input file>', type=click.Path(exists=True), callback=check_input_file_type)
 @click.argument('format', metavar='<output format>', type=click.Choice(CONVERTERS.keys()))
 def convert(fields, input, format):
     """Convert the given input data file into a different format. The following file formats are supported:
@@ -263,22 +264,14 @@ def count(query):
 @main.command()
 @click.option('--fields', help='Specify the list of properties to download instead of grabbing the full banner', default=None, type=str)
 @click.option('--limit', help='The number of results you want to download. -1 to download all the data possible.', default=1000, type=int)
-@click.argument('filename', metavar='<filename>')
-@click.argument('query', metavar='<search query>', nargs=-1)
+@click.argument('filename', metavar='<filename>', callback=check_filename_filepath)
+@click.argument('query', metavar='<search query>', nargs=-1, callback=check_not_null)
 def download(fields, limit, filename, query):
     """Download search results and save them in a compressed JSON file."""
     key = get_api_key()
 
     # Create the query string out of the provided tuple
     query = ' '.join(query).strip()
-
-    # Make sure the user didn't supply an empty string
-    if query == '':
-        raise click.ClickException('Empty search query')
-
-    filename = filename.strip()
-    if filename == '':
-        raise click.ClickException('Empty filename')
 
     # Add the appropriate extension if it's not there atm
     if not filename.endswith('.json.gz'):
@@ -471,17 +464,13 @@ def myip(ipv6):
 @click.option('--fields', help='List of properties to show in the search results.', default='ip_str,port,hostnames,data')
 @click.option('--limit', help='The number of search results that should be returned. Maximum: 1000', default=100, type=int)
 @click.option('--separator', help='The separator between the properties of the search results.', default='\t')
-@click.argument('query', metavar='<search query>', nargs=-1)
+@click.argument('query', metavar='<search query>', nargs=-1, callback=check_not_null)
 def search(color, fields, limit, separator, query):
     """Search the Shodan database"""
     key = get_api_key()
 
     # Create the query string out of the provided tuple
     query = ' '.join(query).strip()
-
-    # Make sure the user didn't supply an empty string
-    if query == '':
-        raise click.ClickException('Empty search query')
 
     # For now we only allow up to 1000 results at a time
     if limit > 1000:
@@ -542,7 +531,7 @@ def search(color, fields, limit, separator, query):
 @click.option('--limit', help='The number of results to return.', default=10, type=int)
 @click.option('--facets', help='List of facets to get statistics for.', default='country,org')
 @click.option('--filename', '-O', help='Save the results in a CSV file of the provided name.', default=None)
-@click.argument('query', metavar='<search query>', nargs=-1)
+@click.argument('query', metavar='<search query>', nargs=-1, callback=check_not_null)
 def stats(limit, facets, filename, query):
     """Provide summary information about a search query"""
     # Setup Shodan
@@ -809,7 +798,7 @@ def stream(streamer, fields, separator, datadir, asn, alert, countries, custom_f
 @click.option('--facets', help='List of facets to get summary information on, if empty then show query total results over time', default='', type=str)
 @click.option('--filename', '-O', help='Save the full results in the given file (append if file exists).', default=None)
 @click.option('--save', '-S', help='Save the full results in the a file named after the query (append if file exists).', default=False, is_flag=True)
-@click.argument('query', metavar='<search query>', nargs=-1)
+@click.argument('query', metavar='<search query>', nargs=-1, callback=check_not_null)
 def trends(filename, save, facets, query):
     """Search Shodan historical database"""
     key = get_api_key()
@@ -818,10 +807,6 @@ def trends(filename, save, facets, query):
     # Create the query string out of the provided tuple
     query = ' '.join(query).strip()
     facets = facets.strip()
-
-    # Make sure the user didn't supply an empty query or facets
-    if query == '':
-        raise click.ClickException('Empty search query')
 
     # Convert comma-separated facets string to list
     parsed_facets = []

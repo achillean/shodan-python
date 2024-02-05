@@ -30,13 +30,13 @@ import click
 import csv
 import os
 import os.path
-import pkg_resources
 import shodan
 import shodan.helpers as helpers
 import threading
 import requests
 import time
 import json
+import sys
 
 # The file converters that are used to go from .json.gz to various other formats
 from shodan.cli.converter import CsvConverter, KmlConverter, GeoJsonConverter, ExcelConverter, ImagesConverter
@@ -50,7 +50,13 @@ from shodan.cli.host import HOST_PRINT
 
 # Allow 3rd-parties to develop custom commands
 from click_plugins import with_plugins
-from pkg_resources import iter_entry_points
+if sys.version_info >= (3, 10):
+    from importlib.metadata import entry_points
+
+    def iter_entry_points(name):
+        return entry_points(group=name)
+else:
+    from pkg_resources import iter_entry_points
 
 # Large subcommands are stored in separate modules
 from shodan.cli.alert import alert
@@ -942,7 +948,14 @@ def radar():
 @main.command()
 def version():
     """Print version of this tool."""
-    print(pkg_resources.get_distribution("shodan").version)
+    try:
+        from importlib import metadata
+
+        print(metadata.version("shodan"))
+    except ImportError:
+        import pkg_resources
+
+        print(pkg_resources.get_distribution("shodan").version)
 
 
 if __name__ == '__main__':

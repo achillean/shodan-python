@@ -384,24 +384,24 @@ class Shodan:
                     # Otherwise lets raise the error message
                     error = u'{}'.format(e)
 
-            raise APIError(error)
+            raise APIError(error, data.status_code)
         elif data.status_code == 403:
-            raise APIError('Access denied (403 Forbidden)')
+            raise APIError('Access denied (403 Forbidden)', data.status_code)
         elif data.status_code == 502:
-            raise APIError('Bad Gateway (502)')
+            raise APIError('Bad Gateway (502)', data.status_code)
 
         # Parse the text into JSON
         try:
-            data = data.json()
+            parsed_data = data.json()
         except ValueError:
-            raise APIError('Unable to parse JSON response')
+            raise APIError('Unable to parse JSON response', data.status_code)
 
         # Raise an exception if an error occurred
-        if type(data) == dict and 'error' in data:
-            raise APIError(data['error'])
+        if isinstance(parsed_data, dict) and 'error' in parsed_data:
+            raise APIError(parsed_data['error'], data.status_code)
 
         # Return the data
-        return data
+        return parsed_data
 
     def count(self, query, facets=None):
         """Returns the total number of search results for the query.

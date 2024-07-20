@@ -45,7 +45,7 @@ from shodan.cli.converter import CsvConverter, KmlConverter, GeoJsonConverter, E
 from shodan.cli.settings import SHODAN_CONFIG_DIR, COLORIZE_FIELDS
 
 # Helper methods
-from shodan.cli.helpers import async_spinner, get_api_key, escape_data, timestr, open_streaming_file, get_banner_field, match_filters
+from shodan.cli.helpers import async_spinner, get_shodan_inst, escape_data, timestr, open_streaming_file, get_banner_field, match_filters
 from shodan.cli.host import HOST_PRINT
 
 # Allow 3rd-parties to develop custom commands
@@ -84,7 +84,7 @@ def main():
     pass
 
 
-# Setup the large subcommands
+# Set up the large subcommands
 main.add_command(alert)
 main.add_command(data)
 main.add_command(org)
@@ -147,11 +147,9 @@ def convert(fields, input, format):
 @click.option('--save', '-S', help='Save the information in the a file named after the domain (append if file exists).', default=False, is_flag=True)
 @click.option('--history', '-H', help='Include historical DNS data in the results', default=False, is_flag=True)
 @click.option('--type', '-T', help='Only returns DNS records of the provided type', default=None)
-def domain_info(domain, details, save, history, type):
+@get_shodan_inst
+def domain_info(domain, details, save, history, type, api):
     """View all available information for a domain"""
-    key = get_api_key()
-    api = shodan.Shodan(key)
-
     try:
         info = api.dns.domain_info(domain, history=history, type=type)
     except shodan.APIError as e:
@@ -239,10 +237,9 @@ def init(key):
 
 @main.command()
 @click.argument('query', metavar='<search query>', nargs=-1)
-def count(query):
+@get_shodan_inst
+def count(query, api):
     """Returns the number of results for a search"""
-    key = get_api_key()
-
     # Create the query string out of the provided tuple
     query = ' '.join(query).strip()
 
@@ -251,7 +248,6 @@ def count(query):
         raise click.ClickException('Empty search query')
 
     # Perform the search
-    api = shodan.Shodan(key)
     try:
         results = api.count(query)
     except shodan.APIError as e:
@@ -265,10 +261,9 @@ def count(query):
 @click.option('--limit', help='The number of results you want to download. -1 to download all the data possible.', default=1000, type=int)
 @click.argument('filename', metavar='<filename>')
 @click.argument('query', metavar='<search query>', nargs=-1)
-def download(fields, limit, filename, query):
+@get_shodan_inst
+def download(fields, limit, filename, query, api):
     """Download search results and save them in a compressed JSON file."""
-    key = get_api_key()
-
     # Create the query string out of the provided tuple
     query = ' '.join(query).strip()
 
@@ -289,8 +284,6 @@ def download(fields, limit, filename, query):
         fields = [item.strip() for item in fields.split(',')]
 
     # Perform the search
-    api = shodan.Shodan(key)
-
     try:
         total = api.count(query)['total']
         info = api.info()
@@ -336,11 +329,9 @@ def download(fields, limit, filename, query):
 @click.option('--filename', '-O', help='Save the host information in the given file (append if file exists).', default=None)
 @click.option('--save', '-S', help='Save the host information in the a file named after the IP (append if file exists).', default=False, is_flag=True)
 @click.argument('ip', metavar='<ip address>')
-def host(format, history, filename, save, ip):
+@get_shodan_inst
+def host(format, history, filename, save, ip, api):
     """View all available information for an IP address"""
-    key = get_api_key()
-    api = shodan.Shodan(key)
-
     try:
         host = api.host(ip, history=history)
 
@@ -367,10 +358,9 @@ def host(format, history, filename, save, ip):
 
 
 @main.command()
-def info():
+@get_shodan_inst
+def info(api):
     """Shows general information about your account"""
-    key = get_api_key()
-    api = shodan.Shodan(key)
     try:
         results = api.info()
     except shodan.APIError as e:
@@ -398,7 +388,7 @@ def parse(color, fields, filters, filename, separator, filenames):
 
     has_filters = len(filters) > 0
 
-    # Setup the output file handle
+    # Set up the output file handle
     fout = None
     if filename:
         # If no filters were provided raise an error since it doesn't make much sense w/out them
@@ -450,12 +440,9 @@ def parse(color, fields, filters, filename, separator, filenames):
 
 @main.command()
 @click.option('--ipv6', '-6', is_flag=True, default=False, help='Try to use IPv6 instead of IPv4')
-def myip(ipv6):
+@get_shodan_inst
+def myip(ipv6, api):
     """Print your external IP address"""
-    key = get_api_key()
-
-    api = shodan.Shodan(key)
-
     # Use the IPv6-enabled domain if requested
     if ipv6:
         api.base_url = 'https://apiv6.shodan.io'
@@ -472,10 +459,9 @@ def myip(ipv6):
 @click.option('--limit', help='The number of search results that should be returned. Maximum: 1000', default=100, type=int)
 @click.option('--separator', help='The separator between the properties of the search results.', default='\t')
 @click.argument('query', metavar='<search query>', nargs=-1)
-def search(color, fields, limit, separator, query):
+@get_shodan_inst
+def search(color, fields, limit, separator, query, api):
     """Search the Shodan database"""
-    key = get_api_key()
-
     # Create the query string out of the provided tuple
     query = ' '.join(query).strip()
 
@@ -494,7 +480,6 @@ def search(color, fields, limit, separator, query):
         raise click.ClickException('Please define at least one property to show')
 
     # Perform the search
-    api = shodan.Shodan(key)
     try:
         results = api.search(query, limit=limit, minify=False, fields=fields)
     except shodan.APIError as e:
@@ -543,12 +528,9 @@ def search(color, fields, limit, separator, query):
 @click.option('--facets', help='List of facets to get statistics for.', default='country,org')
 @click.option('--filename', '-O', help='Save the results in a CSV file of the provided name.', default=None)
 @click.argument('query', metavar='<search query>', nargs=-1)
-def stats(limit, facets, filename, query):
+@get_shodan_inst
+def stats(limit, facets, filename, query, api):
     """Provide summary information about a search query"""
-    # Setup Shodan
-    key = get_api_key()
-    api = shodan.Shodan(key)
-
     # Create the query string out of the provided tuple
     query = ' '.join(query).strip()
 
@@ -644,12 +626,11 @@ def stats(limit, facets, filename, query):
 @click.option('--timeout', help='Timeout. Should the shodan stream cease to send data, then timeout after <timeout> seconds.', default=0, type=int)
 @click.option('--color/--no-color', default=True)
 @click.option('--quiet', help='Disable the printing of information to the screen.', is_flag=True)
-def stream(streamer, fields, separator, datadir, asn, alert, countries, custom_filters, ports, tags, vulns, limit, compresslevel, timeout, color, quiet):
+@get_shodan_inst
+def stream(streamer, fields, separator, datadir, asn, alert, countries, custom_filters, ports, tags, vulns, limit,
+           compresslevel, timeout, color, quiet, api
+           ):
     """Stream data in real-time."""
-    # Setup the Shodan API
-    key = get_api_key()
-    api = shodan.Shodan(key)
-
     # Temporarily change the baseurl
     api.stream.base_url = streamer
 
@@ -720,7 +701,7 @@ def stream(streamer, fields, separator, datadir, asn, alert, countries, custom_f
     else:
         stream_type = 'all'
 
-    # Decide which stream to subscribe to based on whether or not ports were selected
+    # Decide which stream to subscribe to based on whether ports were selected
     def _create_stream(name, args, timeout):
         return {
             'all': api.stream.banners(timeout=timeout),
@@ -810,11 +791,9 @@ def stream(streamer, fields, separator, datadir, asn, alert, countries, custom_f
 @click.option('--filename', '-O', help='Save the full results in the given file (append if file exists).', default=None)
 @click.option('--save', '-S', help='Save the full results in the a file named after the query (append if file exists).', default=False, is_flag=True)
 @click.argument('query', metavar='<search query>', nargs=-1)
-def trends(filename, save, facets, query):
+@get_shodan_inst
+def trends(filename, save, facets, query, api):
     """Search Shodan historical database"""
-    key = get_api_key()
-    api = shodan.Shodan(key)
-
     # Create the query string out of the provided tuple
     query = ' '.join(query).strip()
     facets = facets.strip()
@@ -903,11 +882,9 @@ def trends(filename, save, facets, query):
 
 @main.command()
 @click.argument('ip', metavar='<IP address>')
-def honeyscore(ip):
+@get_shodan_inst
+def honeyscore(ip, api):
     """Check whether the IP is a honeypot or not."""
-    key = get_api_key()
-    api = shodan.Shodan(key)
-
     try:
         score = api.labs.honeyscore(ip)
 
@@ -924,11 +901,9 @@ def honeyscore(ip):
 
 
 @main.command()
-def radar():
+@get_shodan_inst
+def radar(api):
     """Real-Time Map of some results as Shodan finds them."""
-    key = get_api_key()
-    api = shodan.Shodan(key)
-
     from shodan.cli.worldmap import launch_map
 
     try:

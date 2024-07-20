@@ -3,7 +3,7 @@ import requests
 import shodan
 import shodan.helpers as helpers
 
-from shodan.cli.helpers import get_api_key
+from shodan.cli.helpers import get_shodan_inst
 
 
 @click.group()
@@ -14,12 +14,9 @@ def data():
 
 @data.command(name='list')
 @click.option('--dataset', help='See the available files in the given dataset', default=None, type=str)
-def data_list(dataset):
+@get_shodan_inst
+def data_list(dataset, api):
     """List available datasets or the files within those datasets."""
-    # Setup the API connection
-    key = get_api_key()
-    api = shodan.Shodan(key)
-
     if dataset:
         # Show the files within this dataset
         files = api.data.list_files(dataset)
@@ -43,15 +40,16 @@ def data_list(dataset):
 
 
 @data.command(name='download')
-@click.option('--chunksize', help='The size of the chunks that are downloaded into memory before writing them to disk.', default=1024, type=int)
+@click.option('--chunksize', help='The size of the chunks that are downloaded into memory before '
+                                  'writing them to disk.',
+              default=1024, type=int
+              )
 @click.option('--filename', '-O', help='Save the file as the provided filename instead of the default.')
 @click.argument('dataset', metavar='<dataset>')
 @click.argument('name', metavar='<file>')
-def data_download(chunksize, filename, dataset, name):
-    # Setup the API connection
-    key = get_api_key()
-    api = shodan.Shodan(key)
-
+@get_shodan_inst
+def data_download(chunksize, filename, dataset, name, api):
+    """Download a dataset, or a file within a dataset."""
     # Get the file object that the user requested which will contain the URL and total file size
     file = None
     try:

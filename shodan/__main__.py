@@ -49,7 +49,6 @@ from shodan.cli.helpers import async_spinner, get_api_key, escape_data, timestr,
 from shodan.cli.host import HOST_PRINT
 
 # Allow 3rd-parties to develop custom commands
-from click_plugins import with_plugins
 from pkg_resources import iter_entry_points
 
 # Large subcommands are stored in separate modules
@@ -77,8 +76,6 @@ except NameError:
 
 
 # Define the main entry point for all of our commands
-# and expose a way for 3rd-party plugins to tie into the Shodan CLI.
-@with_plugins(iter_entry_points('shodan.cli.plugins'))
 @click.group(context_settings=CONTEXT_SETTINGS)
 def main():
     pass

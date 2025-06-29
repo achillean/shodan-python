@@ -49,7 +49,6 @@ from shodan.cli.helpers import async_spinner, get_api_key, escape_data, timestr,
 from shodan.cli.host import HOST_PRINT
 
 # Allow 3rd-parties to develop custom commands
-from click_plugins import with_plugins
 from pkg_resources import iter_entry_points
 
 # Large subcommands are stored in separate modules
@@ -57,6 +56,7 @@ from shodan.cli.alert import alert
 from shodan.cli.data import data
 from shodan.cli.organization import org
 from shodan.cli.scan import scan
+from shodan.click_plugins import with_plugins
 
 
 # Make "-h" work like "--help"

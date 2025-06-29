@@ -1,5 +1,4 @@
 click
-click-plugins
 colorama
 requests>=2.2.1
 XlsxWriter

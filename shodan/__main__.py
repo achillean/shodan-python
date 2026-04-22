@@ -30,13 +30,26 @@ import click
 import csv
 import os
 import os.path
-import pkg_resources
 import shodan
 import shodan.helpers as helpers
 import threading
 import requests
 import time
 import json
+
+try:
+    from importlib.metadata import PackageNotFoundError, entry_points, version as package_version
+except ImportError:
+    PackageNotFoundError = None
+    entry_points = None
+    package_version = None
+
+    try:
+        import pkg_resources
+    except ImportError:
+        pkg_resources = None
+else:
+    pkg_resources = None
 
 # The file converters that are used to go from .json.gz to various other formats
 from shodan.cli.converter import CsvConverter, KmlConverter, GeoJsonConverter, ExcelConverter, ImagesConverter
@@ -50,7 +63,6 @@ from shodan.cli.host import HOST_PRINT
 
 # Allow 3rd-parties to develop custom commands
 from click_plugins import with_plugins
-from pkg_resources import iter_entry_points
 
 # Large subcommands are stored in separate modules
 from shodan.cli.alert import alert
@@ -76,9 +88,38 @@ except NameError:
     basestring = str
 
 
+def iter_plugin_entry_points(group):
+    if entry_points is not None:
+        try:
+            return tuple(entry_points(group=group))
+        except TypeError:
+            discovered = entry_points()
+            if hasattr(discovered, 'select'):
+                return tuple(discovered.select(group=group))
+            return tuple(discovered.get(group, []))
+
+    if pkg_resources is not None:
+        return tuple(pkg_resources.iter_entry_points(group))
+
+    return tuple()
+
+
+def get_installed_version():
+    if package_version is not None:
+        try:
+            return package_version('shodan')
+        except PackageNotFoundError:
+            pass
+
+    if pkg_resources is not None:
+        return pkg_resources.get_distribution('shodan').version
+
+    return 'unknown'
+
+
 # Define the main entry point for all of our commands
 # and expose a way for 3rd-party plugins to tie into the Shodan CLI.
-@with_plugins(iter_entry_points('shodan.cli.plugins'))
+@with_plugins(iter_plugin_entry_points('shodan.cli.plugins'))
 @click.group(context_settings=CONTEXT_SETTINGS)
 def main():
     pass
@@ -942,7 +983,7 @@ def radar():
 @main.command()
 def version():
     """Print version of this tool."""
-    print(pkg_resources.get_distribution("shodan").version)
+    print(get_installed_version())
 
 
 if __name__ == '__main__':

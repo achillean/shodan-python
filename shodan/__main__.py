@@ -929,10 +929,13 @@ def radar():
     key = get_api_key()
     api = shodan.Shodan(key)
 
-    from shodan.cli.worldmap import launch_map
-
     try:
+        from shodan.cli.worldmap import launch_map
         launch_map(api)
+    except ImportError as e:
+        if getattr(e, 'name', None) in ('curses', '_curses') or 'curses' in str(e):
+            raise click.ClickException('The radar command requires Python curses support. On Windows, install windows-curses and try again.')
+        raise
     except shodan.APIError as e:
         raise click.ClickException(e.value)
     except Exception as e:
